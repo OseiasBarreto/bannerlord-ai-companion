@@ -1,0 +1,73 @@
+<Prefab>
+  <Window>
+    <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent">
+      <Children>
+        <!-- dimmed backdrop -->
+        <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent" Brush="AICompanion.ChatBackdrop" />
+
+        <Widget WidthSizePolicy="Fixed" SuggestedWidth="700"
+                HeightSizePolicy="Fixed" SuggestedHeight="820"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                Brush="AICompanion.ChatPanel">
+          <Children>
+            <!-- title bar -->
+            <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="Fixed" SuggestedHeight="60"
+                    VerticalAlignment="Top">
+              <Children>
+                <TextWidget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Text="@Title" Brush="AICompanion.ChatTitle" />
+                <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="40"
+                              HeightSizePolicy="Fixed" SuggestedHeight="40"
+                              HorizontalAlignment="Right" VerticalAlignment="Center"
+                              Command.Click="ExecuteClose" Brush="AICompanion.CloseButton" />
+              </Children>
+            </Widget>
+
+            <!-- message history -->
+            <ListPanel Id="ChatHistory" WidthSizePolicy="CoverParent"
+                       HeightSizePolicy="Fixed" SuggestedHeight="640"
+                       VerticalAlignment="Top" MarginTop="60"
+                       StackLayout.LayoutMethod="VerticalBottomToTop"
+                       ItemsSource="Messages">
+              <ItemTemplate>
+                <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="StretchToParent"
+                        MarginBottom="10">
+                  <Children>
+                    <TextWidget Text="@Text"
+                                WidthSizePolicy="CoverParent" HeightSizePolicy="StretchToParent"
+                                HorizontalAlignment="@IsPlayer(Right,Left)"
+                                Brush="AICompanion.ChatBubble" />
+                  </Children>
+                </Widget>
+              </ItemTemplate>
+            </ListPanel>
+
+            <!-- waiting indicator -->
+            <TextWidget WidthSizePolicy="CoverParent" HeightSizePolicy="Fixed" SuggestedHeight="20"
+                        VerticalAlignment="Bottom" MarginBottom="70"
+                        HorizontalAlignment="Center"
+                        Text="Cláudio está pensando..."
+                        IsVisible="@IsWaitingForReply"
+                        Brush="AICompanion.ChatTyping" />
+
+            <!-- input row -->
+            <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="Fixed" SuggestedHeight="60"
+                    VerticalAlignment="Bottom">
+              <Children>
+                <EditableTextWidget Id="ChatInput" WidthSizePolicy="StretchToParent"
+                                     HeightSizePolicy="CoverParent" MarginRight="90"
+                                     Text="@InputText" Brush="AICompanion.ChatInput"
+                                     MaxLength="500" />
+                <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="80"
+                              HeightSizePolicy="CoverParent" HorizontalAlignment="Right"
+                              Command.Click="ExecuteSend" Brush="AICompanion.SendButton"
+                              IsEnabled="@IsWaitingForReply(false,true)" />
+              </Children>
+            </Widget>
+          </Children>
+        </Widget>
+      </Children>
+    </Widget>
+  </Window>
+</Prefab>

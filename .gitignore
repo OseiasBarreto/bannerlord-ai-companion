@@ -1,0 +1,6 @@
+bin/
+obj/
+*.user
+.vs/
+ai-companion.config.json
+Modules/AICompanion/ai-companion.config.json
