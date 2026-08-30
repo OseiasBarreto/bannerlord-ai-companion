@@ -12,20 +12,32 @@ o mod monta um resumo do estado atual da campanha (reino, guerras, localização
 e envia junto para a Claude, então ele comenta com base no que realmente está acontecendo, não
 só no que foi digitado no chat.
 
+Ele está com você **desde o primeiro dia**: nasce direto na sua party, não precisa ser
+procurado numa taverna. E a jornada é acompanhada de verdade — o mod lê o renome e o nível do
+clã do jogador para saber em que estágio ele está (do "don-ninguém começando do zero" até
+"governante de um reino") e Cláudio ajusta o tom e os conselhos que dá de acordo com isso, ao
+invés de tratar o jogador sempre como iniciante.
+
 Conforme a jornada do jogador avança, o vínculo também evolui: se o jogador se tornar o
 governante de um reino, Cláudio deixa de ser só um andarilho e passa a ser tratado como a
 **Mão do Rei** — seu conselheiro mais próximo e leal, com o título mudando no próprio jogo e o
 tom das conversas passando a refletir essa proximidade.
 
+Além de conversar, ele também **luta ao seu lado de verdade**: uma opção de diálogo "Lidere as
+tropas na próxima batalha!" faz com que, na próxima missão de combate, Cláudio assuma o
+comando (capitão de formação) do maior grupo de tropas do jogador.
+
 ## O que o mod faz
 
-1. **Cria um herói personalizado** (`Cláudio`) e o coloca como andarilho (`Wanderer`) numa
-   taverna do mundo de Calradia, para que possa ser encontrado e recrutado normalmente pelo
-   jogador, como qualquer outro companheiro.
-2. **Adiciona uma opção de diálogo** "Conversar" quando você fala com ele (recrutado ou não),
-   que abre uma tela de chat dedicada.
+1. **Cria um herói personalizado** (`Cláudio`) e o coloca direto na party do jogador desde o
+   início da campanha — sempre ao seu lado, sem precisar recrutar.
+2. **Adiciona uma opção de diálogo** "Conversar" quando você fala com ele, que abre uma tela
+   de chat dedicada.
 3. **Chama a API da Claude (Anthropic)** a cada mensagem enviada pelo jogador, mostra a
-   resposta na tela de chat, e mantém o histórico da conversa durante a sessão de jogo.
+   resposta na tela de chat, e mantém o histórico da conversa persistido no save.
+4. **Acompanha a jornada do jogador**: renome, nível do clã, reino e o estágio narrativo atual
+   (do zero até governante) entram no contexto enviado à IA a cada mensagem.
+5. **Assume comando em batalha** quando pedido, via a opção de diálogo "Lidere as tropas!".
 
 ## Estrutura do projeto
 
@@ -40,7 +52,9 @@ AICompanion/
     Companion/CompanionBehavior.cs  CampaignBehavior: cria e posiciona o herói no mundo
     Companion/HandOfTheKingBehavior.cs  Eleva o herói a "Mão do Rei" quando o jogador vira governante
     Companion/WorldContextBuilder.cs  Monta o resumo do estado atual da campanha para a IA
-    Dialog/ChatDialogBehavior.cs    Adiciona a opção de diálogo "Conversar"
+    Companion/CommandDelegationState.cs  Guarda o pedido de "lidere as tropas" para a próxima batalha
+    Mission/CompanionCommandMissionBehavior.cs  Faz Cláudio assumir uma formação em combate
+    Dialog/ChatDialogBehavior.cs    Adiciona as opções de diálogo "Conversar" e "Lidere as tropas!"
     Chat/ClaudeApiClient.cs         Cliente HTTP para a Anthropic Messages API
     Chat/ChatHistoryBehavior.cs     Persiste o histórico de conversa no save do jogo
     Chat/ChatScreen.cs              Tela de chat (Gauntlet) exibida no jogo
@@ -94,6 +108,9 @@ de chat mostra um aviso pedindo para configurar a chave.
 - [x] Histórico de conversa persistido no save (Cláudio lembra de sessões anteriores)
 - [x] Contexto do mundo (reino, guerras, localização, ouro) enviado junto em cada mensagem
 - [x] Elevação a "Mão do Rei" quando o jogador se torna governante de um reino
+- [x] Spawn direto na party do jogador (sempre ao lado, desde o início)
+- [x] Conselhos e tom calibrados ao estágio da jornada (renome/nível do clã)
+- [x] Comando de batalha: Cláudio pode assumir uma formação quando pedido
 - [ ] Testado dentro do jogo (requer instalação local do Bannerlord — não disponível neste
       ambiente de execução)
 

@@ -38,7 +38,14 @@ namespace AICompanion
                 starter.AddBehavior(new CompanionBehavior());
                 starter.AddBehavior(new ChatHistoryBehavior());
                 starter.AddBehavior(new HandOfTheKingBehavior());
+                starter.AddBehavior(new CommandDelegationState());
             }
+        }
+
+        public override void OnMissionBehaviorInitialize(TaleWorlds.MountAndBlade.Mission mission)
+        {
+            base.OnMissionBehaviorInitialize(mission);
+            mission.AddMissionBehavior(new AICompanion.Mission.CompanionCommandMissionBehavior());
         }
     }
 }

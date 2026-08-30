@@ -3,8 +3,6 @@ using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
-using TaleWorlds.CampaignSystem.Election;
-using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
@@ -12,8 +10,9 @@ using TaleWorlds.ObjectSystem;
 namespace AICompanion.Companion
 {
     /// <summary>
-    /// Spawns the AI companion hero once per campaign and places him as a recruitable
-    /// wanderer in a starting settlement, exactly like a normal vanilla wanderer NPC.
+    /// Spawns the AI companion hero once per campaign and puts him directly in the player's
+    /// party from the very first day — he's meant to always be at the player's side, not
+    /// something to go track down and recruit like a regular wanderer.
     /// </summary>
     public sealed class CompanionBehavior : CampaignBehaviorBase
     {
@@ -60,28 +59,25 @@ namespace AICompanion.Companion
                     return;
                 }
 
-                var settlement = Settlement.All
-                    .Where(s => s.IsTown)
-                    .OrderBy(s => s.StringId)
-                    .FirstOrDefault();
-
                 var hero = HeroCreator.CreateSpecialHero(
-                    template, settlement, null, null, MBRandom.RandomInt());
+                    template, null, Clan.PlayerClan, null, MBRandom.RandomInt());
 
                 hero.StringId = CompanionDefinition.HeroStringId;
                 hero.SetName(new TaleWorlds.Localization.TextObject(CompanionDefinition.Name),
                              new TaleWorlds.Localization.TextObject(CompanionDefinition.FullTitle));
                 hero.Occupation = Occupation.Wanderer;
-
-                if (settlement != null)
-                {
-                    EnterSettlementAction.ApplyForCharacterOnly(hero, settlement);
-                }
-
                 hero.ChangeState(Hero.CharacterStates.Active);
 
-                Debug.Print($"[AICompanion] Spawned {CompanionDefinition.FullTitle} at " +
-                            $"{settlement?.Name}.");
+                // No going to a tavern to find him — he starts right there in the player's
+                // own party, same as any companion recruited via AddCompanionAction.
+                AddCompanionAction.Apply(MobileParty.MainParty, hero);
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"{CompanionDefinition.FullTitle} se junta a você desde o primeiro dia " +
+                    "de jornada.", Colors.Yellow));
+
+                Debug.Print($"[AICompanion] Spawned {CompanionDefinition.FullTitle} directly " +
+                            "into the player's party.");
             }
             catch (Exception ex)
             {

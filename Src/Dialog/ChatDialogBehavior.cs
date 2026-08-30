@@ -30,6 +30,28 @@ namespace AICompanion.Dialog
                 "{=aicompanion_chat_ack}Claro. Diga o que pensa.",
                 null,
                 null);
+
+            starter.AddPlayerLine(
+                "aicompanion_delegate_command",
+                "hero_main_options",
+                "aicompanion_delegate_command_response",
+                "{=aicompanion_delegate_command_line}Lidere as tropas na próxima batalha!",
+                IsTalkingToCompanion,
+                DelegateCommand);
+
+            starter.AddDialogLine(
+                "aicompanion_delegate_command_ack",
+                "aicompanion_delegate_command_response",
+                "close_window",
+                "{=aicompanion_delegate_command_ack}Como quiser. Na próxima batalha, deixe " +
+                "comigo — cuidarei bem dos seus homens.",
+                null,
+                null);
+        }
+
+        private static void DelegateCommand()
+        {
+            AICompanion.Companion.CommandDelegationState.CommandDelegated = true;
         }
 
         private static bool IsTalkingToCompanion()

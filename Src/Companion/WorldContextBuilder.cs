@@ -29,7 +29,19 @@ namespace AICompanion.Companion
                   .Append("recitar como lista): ");
 
                 sb.Append($"Data de Calradia: {CampaignTime.Now.GetDayOfSeason + 1}º dia da estação. ");
-                sb.Append($"Jogador: {hero.Name}, clã {clan?.Name}. ");
+                sb.Append($"Jogador: {hero.Name}, clã {clan?.Name}, ");
+                sb.Append($"renome {clan?.Renown:0}, clã de nível {clan?.Tier}. ");
+
+                // Rough narrative stage, so Cláudio's tone/advice naturally tracks the
+                // player's rise from nobody to ruler instead of staying static all game.
+                var stage = kingdom != null && kingdom.RulingClan == clan
+                    ? "governante de um reino"
+                    : clan != null && clan.Tier >= 3
+                        ? "um nobre respeitado, com terras e reputação"
+                        : clan != null && clan.Tier >= 1
+                            ? "um aventureiro em ascensão, ainda construindo nome"
+                            : "praticamente um don-ninguém, começando do zero";
+                sb.Append($"Estágio atual da jornada: {stage}. ");
 
                 if (kingdom == null)
                 {
