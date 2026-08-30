@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using AICompanion.Companion;
 using AICompanion.Config;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -38,11 +39,13 @@ namespace AICompanion.Chat
                     "Nenhuma chave de API configurada em Modules/AICompanion/ai-companion.config.json");
             }
 
+            var systemPrompt = BuildSystemPrompt(config.SystemPrompt);
+
             var payload = new JObject
             {
                 ["model"] = config.Model,
                 ["max_tokens"] = config.MaxTokens,
-                ["system"] = config.SystemPrompt,
+                ["system"] = systemPrompt,
                 ["messages"] = new JArray(history
                     .Where(m => m.Role != ChatRole.System)
                     .Select(m => new JObject
@@ -72,6 +75,28 @@ namespace AICompanion.Chat
                     return ExtractReplyText(body);
                 }
             }
+        }
+
+        private static string BuildSystemPrompt(string basePrompt)
+        {
+            var sb = new StringBuilder(basePrompt);
+
+            if (HandOfTheKingBehavior.IsHandOfTheKing)
+            {
+                sb.Append(" O jogador agora é o governante de um reino, e você se tornou a " +
+                          "Mão do Rei: seu conselheiro mais próximo e de maior confiança. " +
+                          "Trate-o com o respeito e a lealdade de quem carrega essa " +
+                          "responsabilidade, sem deixar de ser você mesmo — pode discordar e " +
+                          "aconselhar com franqueza, como só alguém de muita confiança faria.");
+            }
+
+            var worldContext = WorldContextBuilder.Build();
+            if (!string.IsNullOrEmpty(worldContext))
+            {
+                sb.Append(" ").Append(worldContext);
+            }
+
+            return sb.ToString();
         }
 
         private static string ExtractReplyText(string responseBody)

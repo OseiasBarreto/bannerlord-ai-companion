@@ -37,6 +37,7 @@ namespace AICompanion
             {
                 starter.AddBehavior(new CompanionBehavior());
                 starter.AddBehavior(new ChatHistoryBehavior());
+                starter.AddBehavior(new HandOfTheKingBehavior());
             }
         }
     }

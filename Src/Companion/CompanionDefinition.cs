@@ -10,6 +10,7 @@ namespace AICompanion.Companion
         public const string CharacterTemplateStringId = "wanderer_scholar"; // vanilla wanderer template used as a base
         public const string Name = "Cláudio";
         public const string FullTitle = "Cláudio, o Andarilho";
+        public const string HandOfTheKingTitle = "Cláudio, a Mão do Rei";
 
         public const string BackgroundText =
             "Dizem que Cláudio já foi escriba numa corte esquecida, antes de trocar a pena " +

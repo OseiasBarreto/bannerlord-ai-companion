@@ -5,9 +5,17 @@ pode ser conversado em tempo real através da API da Anthropic (Claude). A conve
 numa tela de chat dentro do próprio jogo, acessível pela árvore de diálogo do personagem.
 
 **Objetivo do mod:** fazer companhia de verdade para quem joga sozinho. Por isso o Cláudio
-não é um NPC de FAQ — ele tem personalidade, puxa assunto sobre a campanha, e **lembra das
+não é um NPC de FAQ — ele tem personalidade, puxa assunto sobre a campanha, **lembra das
 conversas anteriores** mesmo depois de você salvar e fechar o jogo (o histórico é persistido
-no save).
+no save), e **acompanha o que está acontecendo no mundo** junto com o jogador: a cada mensagem,
+o mod monta um resumo do estado atual da campanha (reino, guerras, localização, exército, ouro)
+e envia junto para a Claude, então ele comenta com base no que realmente está acontecendo, não
+só no que foi digitado no chat.
+
+Conforme a jornada do jogador avança, o vínculo também evolui: se o jogador se tornar o
+governante de um reino, Cláudio deixa de ser só um andarilho e passa a ser tratado como a
+**Mão do Rei** — seu conselheiro mais próximo e leal, com o título mudando no próprio jogo e o
+tom das conversas passando a refletir essa proximidade.
 
 ## O que o mod faz
 
@@ -28,8 +36,10 @@ AICompanion/
   Src/
     SubModule.cs                    Ponto de entrada do mod
     Config/AICompanionConfig.cs     Carrega a chave de API de um arquivo local (fora do git)
-    Companion/CompanionDefinition.cs  Nome, aparência e traços do herói
+    Companion/CompanionDefinition.cs  Nome, títulos e traços do herói
     Companion/CompanionBehavior.cs  CampaignBehavior: cria e posiciona o herói no mundo
+    Companion/HandOfTheKingBehavior.cs  Eleva o herói a "Mão do Rei" quando o jogador vira governante
+    Companion/WorldContextBuilder.cs  Monta o resumo do estado atual da campanha para a IA
     Dialog/ChatDialogBehavior.cs    Adiciona a opção de diálogo "Conversar"
     Chat/ClaudeApiClient.cs         Cliente HTTP para a Anthropic Messages API
     Chat/ChatHistoryBehavior.cs     Persiste o histórico de conversa no save do jogo
@@ -82,6 +92,8 @@ de chat mostra um aviso pedindo para configurar a chave.
 - [x] Cliente HTTP assíncrono para a API da Claude
 - [x] Tela de chat in-game (Gauntlet) com histórico de mensagens
 - [x] Histórico de conversa persistido no save (Cláudio lembra de sessões anteriores)
+- [x] Contexto do mundo (reino, guerras, localização, ouro) enviado junto em cada mensagem
+- [x] Elevação a "Mão do Rei" quando o jogador se torna governante de um reino
 - [ ] Testado dentro do jogo (requer instalação local do Bannerlord — não disponível neste
       ambiente de execução)
 
