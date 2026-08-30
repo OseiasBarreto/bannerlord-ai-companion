@@ -1,3 +1,4 @@
+using AICompanion.Chat;
 using AICompanion.Companion;
 using AICompanion.Config;
 using AICompanion.Dialog;
@@ -35,6 +36,7 @@ namespace AICompanion
             if (game.GameType is Campaign && gameStarterObject is CampaignGameStarter starter)
             {
                 starter.AddBehavior(new CompanionBehavior());
+                starter.AddBehavior(new ChatHistoryBehavior());
             }
         }
     }

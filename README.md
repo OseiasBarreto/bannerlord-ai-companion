@@ -4,6 +4,11 @@ Mod que adiciona ao jogo um herói companheiro recrutável — **Cláudio, o And
 pode ser conversado em tempo real através da API da Anthropic (Claude). A conversa acontece
 numa tela de chat dentro do próprio jogo, acessível pela árvore de diálogo do personagem.
 
+**Objetivo do mod:** fazer companhia de verdade para quem joga sozinho. Por isso o Cláudio
+não é um NPC de FAQ — ele tem personalidade, puxa assunto sobre a campanha, e **lembra das
+conversas anteriores** mesmo depois de você salvar e fechar o jogo (o histórico é persistido
+no save).
+
 ## O que o mod faz
 
 1. **Cria um herói personalizado** (`Cláudio`) e o coloca como andarilho (`Wanderer`) numa
@@ -27,8 +32,8 @@ AICompanion/
     Companion/CompanionBehavior.cs  CampaignBehavior: cria e posiciona o herói no mundo
     Dialog/ChatDialogBehavior.cs    Adiciona a opção de diálogo "Conversar"
     Chat/ClaudeApiClient.cs         Cliente HTTP para a Anthropic Messages API
+    Chat/ChatHistoryBehavior.cs     Persiste o histórico de conversa no save do jogo
     Chat/ChatScreen.cs              Tela de chat (Gauntlet) exibida no jogo
-    Chat/Layouts/ChatScreen.xml     Layout visual da tela de chat
   ModuleData/
     (dados do módulo, se necessário)
 ```
@@ -76,6 +81,7 @@ de chat mostra um aviso pedindo para configurar a chave.
 - [x] Opção de diálogo "Conversar"
 - [x] Cliente HTTP assíncrono para a API da Claude
 - [x] Tela de chat in-game (Gauntlet) com histórico de mensagens
+- [x] Histórico de conversa persistido no save (Cláudio lembra de sessões anteriores)
 - [ ] Testado dentro do jogo (requer instalação local do Bannerlord — não disponível neste
       ambiente de execução)
 

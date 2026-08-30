@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using AICompanion.Companion;
 using AICompanion.Config;
 using TaleWorlds.Library;
@@ -15,8 +16,11 @@ namespace AICompanion.Chat
     /// </summary>
     public sealed class ChatVM : ViewModel
     {
+        // How many past turns get sent to Claude as context on every message — keeps the
+        // request bounded even though far more history is kept in the save file.
+        private const int ContextWindowSize = 30;
+
         private readonly ClaudeApiClient _client = new ClaudeApiClient();
-        private readonly List<ChatMessage> _history = new List<ChatMessage>();
         private readonly ConcurrentQueue<Action> _mainThreadQueue = new ConcurrentQueue<Action>();
 
         private MBBindingList<ChatMessageVM> _messages = new MBBindingList<ChatMessageVM>();
@@ -30,10 +34,20 @@ namespace AICompanion.Chat
         {
             if (!AICompanionConfig.Instance.IsConfigured)
             {
-                AddMessage(ChatRole.System,
+                Messages.Add(new ChatMessageVM(new ChatMessage(ChatRole.System,
                     "Nenhuma chave de API configurada. Crie " +
                     "Modules/AICompanion/ai-companion.config.json com sua chave da Anthropic " +
-                    "para conversar com Cláudio.");
+                    "para conversar com Cláudio.")));
+                return;
+            }
+
+            var previous = ChatHistoryBehavior.Instance?.History;
+            if (previous != null && previous.Count > 0)
+            {
+                foreach (var message in previous)
+                {
+                    Messages.Add(new ChatMessageVM(message));
+                }
             }
             else
             {
@@ -107,7 +121,10 @@ namespace AICompanion.Chat
             AddMessage(ChatRole.Player, text);
             IsWaitingForReply = true;
 
-            var historySnapshot = new List<ChatMessage>(_history);
+            var fullHistory = ChatHistoryBehavior.Instance?.History ?? (IReadOnlyList<ChatMessage>)new List<ChatMessage>();
+            var historySnapshot = fullHistory
+                .Skip(Math.Max(0, fullHistory.Count - ContextWindowSize))
+                .ToList();
 
             _client.SendAsync(historySnapshot).ContinueWith(task =>
             {
@@ -146,7 +163,10 @@ namespace AICompanion.Chat
         private void AddMessage(ChatRole role, string text)
         {
             var message = new ChatMessage(role, text);
-            _history.Add(message);
+            if (role != ChatRole.System)
+            {
+                ChatHistoryBehavior.Instance?.Append(message);
+            }
             Messages.Add(new ChatMessageVM(message));
         }
     }
