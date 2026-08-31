@@ -21,10 +21,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Src/**/*.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <!-- Core engine / gameplay assemblies shipped with Bannerlord. -->
     <Reference Include="TaleWorlds.Core">
       <HintPath>$(BannerlordBin)\TaleWorlds.Core.dll</HintPath>
@@ -66,6 +62,22 @@
       <HintPath>$(BannerlordBin)\TaleWorlds.GauntletUI.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="TaleWorlds.Engine.GauntletUI">
+      <HintPath>$(BannerlordBin)\TaleWorlds.Engine.GauntletUI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Core.ViewModelCollection">
+      <HintPath>$(BannerlordBin)\TaleWorlds.Core.ViewModelCollection.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.ObjectSystem">
+      <HintPath>$(BannerlordBin)\TaleWorlds.ObjectSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.DotNet">
+      <HintPath>$(BannerlordBin)\TaleWorlds.DotNet.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="TaleWorlds.TwoDimension">
       <HintPath>$(BannerlordBin)\TaleWorlds.TwoDimension.dll</HintPath>
       <Private>false</Private>
@@ -74,18 +86,10 @@
       <HintPath>$(BannerlordBin)\TaleWorlds.InputSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="SandBox">
-      <HintPath>$(BannerlordBin)\SandBox.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="SandBox.GauntletUI">
-      <HintPath>$(BannerlordBin)\SandBox.GauntletUI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Gauntlet.UI">
-      <HintPath>$(BannerlordBin)\Gauntlet.UI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 
   <ItemGroup>

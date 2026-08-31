@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Text;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Party;
 
 namespace AICompanion.Companion
 {

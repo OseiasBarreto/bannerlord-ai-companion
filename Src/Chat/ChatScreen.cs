@@ -1,7 +1,6 @@
-using TaleWorlds.Core.ViewModelCollection.Input;
 using TaleWorlds.Engine.GauntletUI;
 using TaleWorlds.GauntletUI;
-using TaleWorlds.InputSystem;
+using TaleWorlds.Library;
 using TaleWorlds.ScreenSystem;
 
 namespace AICompanion.Chat
@@ -10,14 +9,10 @@ namespace AICompanion.Chat
     /// Full-screen chat window pushed on top of the current screen when the player picks the
     /// "Conversar" dialog option. Closes itself and pops back to whatever was underneath.
     /// </summary>
-    public sealed class ChatScreen : ScreenBase, IGauntletScreen, IApplicationScreen
+    public sealed class ChatScreen : ScreenBase
     {
         private GauntletLayer _layer;
         private ChatVM _dataSource;
-
-        public InputContext InputContext { get; private set; }
-        public string SceneName => null;
-        public string ApplicationTitle => AICompanion.Companion.CompanionDefinition.FullTitle;
 
         protected override void OnInitialize()
         {
@@ -25,11 +20,10 @@ namespace AICompanion.Chat
 
             _dataSource = new ChatVM { CloseRequested = CloseScreen };
 
-            _layer = new GauntletLayer(1);
+            _layer = new GauntletLayer("AICompanionChat", 1);
             _layer.LoadMovie("AICompanionChatScreen", _dataSource);
             _layer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);
 
-            InputContext = new InputContext("AICompanionChat");
             AddLayer(_layer);
         }
 

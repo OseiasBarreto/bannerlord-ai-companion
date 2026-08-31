@@ -65,12 +65,12 @@ namespace AICompanion.Companion
                 hero.StringId = CompanionDefinition.HeroStringId;
                 hero.SetName(new TaleWorlds.Localization.TextObject(CompanionDefinition.Name),
                              new TaleWorlds.Localization.TextObject(CompanionDefinition.FullTitle));
-                hero.Occupation = Occupation.Wanderer;
+                hero.SetNewOccupation(Occupation.Wanderer);
                 hero.ChangeState(Hero.CharacterStates.Active);
 
                 // No going to a tavern to find him — he starts right there in the player's
                 // own party, same as any companion recruited via AddCompanionAction.
-                AddCompanionAction.Apply(MobileParty.MainParty, hero);
+                AddCompanionAction.Apply(Clan.PlayerClan, hero);
 
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"{CompanionDefinition.FullTitle} se junta a você desde o primeiro dia " +
