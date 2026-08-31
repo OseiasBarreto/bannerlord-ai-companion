@@ -1,5 +1,6 @@
 using AICompanion.Chat;
 using AICompanion.Companion;
+using AICompanion.Config;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.ScreenSystem;
 
@@ -15,6 +16,8 @@ namespace AICompanion.Dialog
     {
         public static void RegisterDialogs(CampaignGameStarter starter)
         {
+            ModLog.Info("RegisterDialogs called.");
+
             starter.AddPlayerLine(
                 "aicompanion_start_chat",
                 "hero_main_options",
@@ -57,8 +60,11 @@ namespace AICompanion.Dialog
         private static bool IsTalkingToCompanion()
         {
             var conversationHero = Hero.OneToOneConversationHero;
-            return conversationHero != null &&
-                   conversationHero.StringId == CompanionDefinition.HeroStringId;
+            var result = conversationHero != null &&
+                         conversationHero.StringId == CompanionDefinition.HeroStringId;
+            ModLog.Info($"IsTalkingToCompanion check: conversationHero=" +
+                        $"{conversationHero?.StringId ?? "null"} ({conversationHero?.Name}), result={result}.");
+            return result;
         }
 
         private static void OpenChatScreen()

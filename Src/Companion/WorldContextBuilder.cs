@@ -77,13 +77,17 @@ namespace AICompanion.Companion
 
                 sb.Append($"Ouro do jogador: {hero.Gold}. ");
 
+                sb.Append("Como Cláudio realmente enxerga o jogador agora, com base em tudo que " +
+                          $"viu até aqui: {CompanionOpinionBehavior.DescribeForPrompt()} ");
+
                 return sb.ToString();
             }
-            catch
+            catch (System.Exception ex)
             {
                 // World-state reads touch a lot of live game objects; if anything here is
                 // null/unavailable mid-campaign, just skip the extra context rather than
                 // breaking the chat.
+                Config.ModLog.Error("Failed to build world context", ex);
                 return string.Empty;
             }
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AICompanion.Companion;
 using AICompanion.Config;
@@ -12,14 +13,13 @@ using Newtonsoft.Json.Linq;
 namespace AICompanion.Chat
 {
     /// <summary>
-    /// Minimal async client for the Anthropic Messages API. Kept dependency-free (just
-    /// HttpClient + Newtonsoft.Json) so it doesn't need anything beyond what ships with the
-    /// game's .NET runtime.
+    /// Minimal async client for the OpenRouter chat-completions API (OpenAI-compatible shape).
+    /// Kept dependency-free (just HttpClient + Newtonsoft.Json) so it doesn't need anything
+    /// beyond what ships with the game's .NET runtime.
     /// </summary>
     public sealed class ClaudeApiClient
     {
-        private const string Endpoint = "https://api.anthropic.com/v1/messages";
-        private const string AnthropicVersion = "2023-06-01";
+        private const string Endpoint = "https://openrouter.ai/api/v1/chat/completions";
 
         private static readonly HttpClient Http = new HttpClient
         {
@@ -27,8 +27,8 @@ namespace AICompanion.Chat
         };
 
         /// <summary>
-        /// Sends the running conversation to Claude and returns the companion's reply.
-        /// Throws on network/API errors — callers should catch and show a fallback line.
+        /// Sends the running conversation to the configured model and returns the companion's
+        /// reply. Throws on network/API errors — callers should catch and show a fallback line.
         /// </summary>
         public async Task<string> SendAsync(IReadOnlyList<ChatMessage> history)
         {
@@ -41,24 +41,28 @@ namespace AICompanion.Chat
 
             var systemPrompt = BuildSystemPrompt(config.SystemPrompt);
 
+            var messages = new JArray { new JObject { ["role"] = "system", ["content"] = systemPrompt } };
+            foreach (var m in history.Where(m => m.Role != ChatRole.System))
+            {
+                messages.Add(new JObject
+                {
+                    ["role"] = m.Role == ChatRole.Player ? "user" : "assistant",
+                    ["content"] = m.Text
+                });
+            }
+
             var payload = new JObject
             {
                 ["model"] = config.Model,
                 ["max_tokens"] = config.MaxTokens,
-                ["system"] = systemPrompt,
-                ["messages"] = new JArray(history
-                    .Where(m => m.Role != ChatRole.System)
-                    .Select(m => new JObject
-                    {
-                        ["role"] = m.Role == ChatRole.Player ? "user" : "assistant",
-                        ["content"] = m.Text
-                    }))
+                ["messages"] = messages
             };
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint))
             {
-                request.Headers.Add("x-api-key", config.ApiKey);
-                request.Headers.Add("anthropic-version", AnthropicVersion);
+                request.Headers.Add("Authorization", $"Bearer {config.ApiKey}");
+                request.Headers.Add("HTTP-Referer", "https://github.com/OseiasBarreto/bannerlord-ai-companion");
+                request.Headers.Add("X-Title", "Bannerlord AI Companion");
                 request.Content = new StringContent(
                     payload.ToString(Formatting.None), Encoding.UTF8, "application/json");
 
@@ -69,9 +73,11 @@ namespace AICompanion.Chat
                     if (!response.IsSuccessStatusCode)
                     {
                         var errorMessage = TryExtractError(body) ?? $"HTTP {(int)response.StatusCode}";
-                        throw new InvalidOperationException($"Falha na API da Claude: {errorMessage}");
+                        Config.ModLog.Error($"OpenRouter call failed ({(int)response.StatusCode}): {errorMessage}");
+                        throw new InvalidOperationException($"Falha na API da OpenRouter: {errorMessage}");
                     }
 
+                    Config.ModLog.Info($"OpenRouter call succeeded (model: {config.Model}).");
                     return ExtractReplyText(body);
                 }
             }
@@ -96,23 +102,42 @@ namespace AICompanion.Chat
                 sb.Append(" ").Append(worldContext);
             }
 
+            var memory = CompanionMemoryBehavior.Instance?.DescribeForPrompt();
+            if (!string.IsNullOrEmpty(memory))
+            {
+                sb.Append(" ").Append(memory);
+            }
+
+            sb.Append(" Quando algo desta conversa valer a pena lembrar depois (uma escolha " +
+                      "importante do jogador, uma promessa, uma mudança forte de opinião sua), " +
+                      "termine sua resposta com uma linha extra, sozinha, no formato exato " +
+                      "\"[MEMORIA: texto curto e objetivo]\". Essa linha nunca aparece pro " +
+                      "jogador — só use quando for realmente relevante, não em toda resposta.");
+
             return sb.ToString();
         }
+
+        private static readonly Regex MemoryTag =
+            new Regex(@"\[MEMORIA:\s*(?<note>[^\]]+)\]", RegexOptions.IgnoreCase);
 
         private static string ExtractReplyText(string responseBody)
         {
             var parsed = JObject.Parse(responseBody);
-            var blocks = parsed["content"] as JArray;
-            if (blocks == null || blocks.Count == 0)
+            var choices = parsed["choices"] as JArray;
+            var text = (string)choices?.FirstOrDefault()?["message"]?["content"];
+
+            if (string.IsNullOrWhiteSpace(text))
             {
                 return "(sem resposta)";
             }
 
-            var text = string.Concat(blocks
-                .Where(b => (string)b["type"] == "text")
-                .Select(b => (string)b["text"]));
+            foreach (Match match in MemoryTag.Matches(text))
+            {
+                CompanionMemoryBehavior.Instance?.AddMemory(match.Groups["note"].Value);
+            }
 
-            return string.IsNullOrWhiteSpace(text) ? "(sem resposta)" : text.Trim();
+            var visibleText = MemoryTag.Replace(text, string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(visibleText) ? "(sem resposta)" : visibleText;
         }
 
         private static string TryExtractError(string responseBody)

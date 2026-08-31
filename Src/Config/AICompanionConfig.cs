@@ -15,7 +15,7 @@ namespace AICompanion.Config
         public string ApiKey { get; set; } = string.Empty;
 
         [JsonProperty("model")]
-        public string Model { get; set; } = "claude-sonnet-5";
+        public string Model { get; set; } = "nvidia/nemotron-3-ultra-550b-a55b:free";
 
         [JsonProperty("systemPrompt")]
         public string SystemPrompt { get; set; } =
@@ -30,8 +30,11 @@ namespace AICompanion.Config
             "jogador — de quem está começando do zero até quem já governa um reino: cresça " +
             "junto com ele, sem tratá-lo como iniciante depois que ele já não for. Fale em tom " +
             "caloroso e natural, como um amigo de longa data, mantendo o sotaque de personagem " +
-            "medieval de Calradia. Respostas curtas (2 a 5 frases), nunca quebre o personagem, " +
-            "nunca mencione ser uma IA.";
+            "medieval de Calradia. Sua lealdade é real, mas não cega: você forma seu próprio " +
+            "julgamento sobre quem o jogador está se tornando, e se ele se afastar demais dos " +
+            "seus valores, você se distancia, discorda abertamente e pode até ir embora — isso " +
+            "é parte de ter personalidade própria, não uma ameaça vazia. Respostas curtas (2 a " +
+            "5 frases), nunca quebre o personagem, nunca mencione ser uma IA.";
 
         [JsonProperty("maxTokens")]
         public int MaxTokens { get; set; } = 400;
@@ -51,18 +54,21 @@ namespace AICompanion.Config
             {
                 if (!File.Exists(ConfigPath))
                 {
-                    Debug.Print($"[AICompanion] Config file not found at {ConfigPath}. " +
-                                "Chat will be disabled until it's created.");
+                    ModLog.Info($"Config file not found at {ConfigPath}. Chat will be disabled " +
+                                "until it's created.");
                     return new AICompanionConfig();
                 }
 
                 var json = File.ReadAllText(ConfigPath);
                 var config = JsonConvert.DeserializeObject<AICompanionConfig>(json);
+                ModLog.Info(config != null && config.IsConfigured
+                    ? $"Config loaded. Model: {config.Model}."
+                    : "Config loaded but no API key is set.");
                 return config ?? new AICompanionConfig();
             }
             catch (Exception ex)
             {
-                Debug.Print($"[AICompanion] Failed to load config: {ex.Message}");
+                ModLog.Error("Failed to load config", ex);
                 return new AICompanionConfig();
             }
         }

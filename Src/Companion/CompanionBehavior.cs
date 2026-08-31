@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using AICompanion.Config;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
@@ -40,27 +41,46 @@ namespace AICompanion.Companion
                     .FirstOrDefault(h => h.StringId == CompanionDefinition.HeroStringId);
                 if (existing != null)
                 {
+                    ModLog.Info($"Companion already exists (StringId={existing.StringId}), skipping spawn.");
+                    FixAgeIfStillAChild(existing);
                     return;
                 }
 
                 var template = MBObjectManager.Instance.GetObject<CharacterObject>(
                     CompanionDefinition.CharacterTemplateStringId);
-                if (template == null)
+                if (template != null)
+                {
+                    ModLog.Info($"Found configured template '{CompanionDefinition.CharacterTemplateStringId}'.");
+                }
+                else
                 {
                     // Fallback: any vanilla wanderer template, in case the configured id
-                    // doesn't exist in this game version.
+                    // doesn't exist in this game version (or was replaced by another mod).
+                    ModLog.Info($"Configured template '{CompanionDefinition.CharacterTemplateStringId}' " +
+                                "not found — falling back to any Occupation.Wanderer template. " +
+                                $"Total CharacterObject count: {CharacterObject.All.Count}.");
                     template = CharacterObject.All
                         .FirstOrDefault(c => c.Occupation == Occupation.Wanderer);
                 }
 
                 if (template == null)
                 {
-                    Debug.Print("[AICompanion] No wanderer template found — cannot spawn Cláudio.");
+                    ModLog.Error("No wanderer template found at all — cannot spawn Cláudio. " +
+                                 "This usually means another mod removed every wanderer-occupation " +
+                                 "CharacterObject before this behavior ran.");
                     return;
                 }
 
+                ModLog.Info($"Using template '{template.StringId}' to create the companion.");
+
+                // MBRandom.RandomInt() with no bounds returns a value across the whole int
+                // range, which produced a nonsensical birth date (he spawned as an infant).
+                // HeroComesOfAge (18 in the base game) is the youngest a hero counts as a full
+                // adult, so roll within a plausible young-adult-to-veteran band above that.
+                var age = MBRandom.RandomInt(18, 40);
+                ModLog.Info($"Rolled age {age} for the companion.");
                 var hero = HeroCreator.CreateSpecialHero(
-                    template, null, Clan.PlayerClan, null, MBRandom.RandomInt());
+                    template, null, Clan.PlayerClan, null, age);
 
                 hero.StringId = CompanionDefinition.HeroStringId;
                 hero.SetName(new TaleWorlds.Localization.TextObject(CompanionDefinition.Name),
@@ -76,14 +96,35 @@ namespace AICompanion.Companion
                     $"{CompanionDefinition.FullTitle} se junta a você desde o primeiro dia " +
                     "de jornada.", Colors.Yellow));
 
-                Debug.Print($"[AICompanion] Spawned {CompanionDefinition.FullTitle} directly " +
-                            "into the player's party.");
+                ModLog.Info($"Spawned {CompanionDefinition.FullTitle} directly into the player's party.");
             }
             catch (Exception ex)
             {
                 // Never let a spawn failure take down the whole campaign — log and move on.
-                Debug.Print($"[AICompanion] Failed to spawn companion: {ex}");
+                ModLog.Error("Failed to spawn companion", ex);
             }
+        }
+
+        /// <summary>
+        /// One-time repair for saves created before the age bug fix: earlier builds passed
+        /// MBRandom.RandomInt() with no bounds as the companion's age, which spawned him as an
+        /// infant. Detects that state and backdates his birthday so he's a proper adult.
+        /// </summary>
+        private static void FixAgeIfStillAChild(Hero companion)
+        {
+            if (!companion.IsChild)
+            {
+                return;
+            }
+
+            var age = MBRandom.RandomInt(18, 40);
+            companion.SetBirthDay(CampaignTime.Now - CampaignTime.Years(age));
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"{CompanionDefinition.Name} de repente cresceu — parece que o tempo passou " +
+                "diferente pra ele.", Colors.Yellow));
+
+            ModLog.Info($"Fixed companion age: was a child, backdated birthday to age {age}.");
         }
     }
 }
