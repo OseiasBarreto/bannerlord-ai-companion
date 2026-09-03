@@ -2,108 +2,50 @@
   <Window>
     <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" IsVisible="@IsOpen">
       <Children>
-        <!-- One single panel now (reply + input merged, as one coherent box instead of two
-             floating ones) anchored bottom-left, above the vanilla nameplate box that stays
-             visible underneath — not centered, not overlapping it. -->
-        <Widget WidthSizePolicy="Fixed" SuggestedWidth="760"
-                HeightSizePolicy="Fixed" SuggestedHeight="460"
-                HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                MarginLeft="40" MarginBottom="340"
+        <!-- Cláudio's reply now shows in the vanilla conversation nameplate itself (see
+             DialogTextPatch — a Harmony patch redirects its DialogText to our text while this
+             chat is open), so this panel is just the free-text input the vanilla screen has no
+             widget for. Positioned right above that vanilla box, not overlapping it. -->
+        <Widget WidthSizePolicy="Fixed" SuggestedWidth="700"
+                HeightSizePolicy="Fixed" SuggestedHeight="120"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                MarginRight="40" MarginBottom="100"
                 Sprite="npc_dialogue_panel_9">
           <Children>
-
-            <!-- header: clan banner (same as the vanilla conversation nameplate uses), name, close -->
-            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="50"
-                    VerticalAlignment="Top" MarginTop="10" MarginLeft="16" MarginRight="16">
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="30"
+                    VerticalAlignment="Top" MarginTop="8" MarginLeft="16" MarginRight="16">
               <Children>
-                <Widget WidthSizePolicy="Fixed" SuggestedWidth="40"
-                        HeightSizePolicy="Fixed" SuggestedHeight="40"
-                        HorizontalAlignment="Left" VerticalAlignment="Center"
-                        DoNotAcceptEvents="true">
-                  <Children>
-                    <ImageIdentifierWidget DoNotAcceptEvents="true" DataSource="{CompanionBanner}"
-                                            WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                            HideWhenNull="true" ImageId="@Id" TextureProviderName="@TextureProviderName" />
-                  </Children>
-                </Widget>
-
                 <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
-                            HorizontalAlignment="Left" VerticalAlignment="Center" MarginLeft="52"
-                            Text="@Title" Brush="FullScreenNotice.Title" />
-
-                <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="36"
-                              HeightSizePolicy="Fixed" SuggestedHeight="36"
-                              HorizontalAlignment="Right" VerticalAlignment="Center"
+                            HorizontalAlignment="Left" VerticalAlignment="Center"
+                            Text="Você diz:" Brush="GameTip.Text" />
+                <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                            HorizontalAlignment="Left" VerticalAlignment="Center" MarginLeft="12"
+                            Text="Cláudio está pensando..." IsVisible="@IsWaitingForReply"
+                            Brush="GameTip.Text" />
+                <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="70"
+                              HeightSizePolicy="StretchToParent"
+                              HorizontalAlignment="Right"
                               Command.Click="ExecuteClose" Brush="ButtonSimpleBrush">
                   <Children>
                     <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                                Text="X" Brush="GameTip.Text" DoNotAcceptEvents="true" />
+                                Text="Fechar" Brush="GameTip.Text" DoNotAcceptEvents="true" />
                   </Children>
                 </ButtonWidget>
               </Children>
             </Widget>
 
-            <!-- Cláudio's current line — scrollable so a long reply doesn't just get clipped -->
-            <ScrollablePanel Id="ReplyScroll" WidthSizePolicy="Fixed" SuggestedWidth="700"
-                              HeightSizePolicy="Fixed" SuggestedHeight="270"
-                              VerticalAlignment="Top" HorizontalAlignment="Left"
-                              MarginTop="65" MarginLeft="16"
-                              AutoHideScrollBars="true" ClipRect="ReplyClipRect"
-                              InnerPanel="ReplyClipRect\ReplyText" VerticalScrollbar="..\ReplyScrollbar">
-              <Children>
-                <Widget Id="ReplyClipRect" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                        ClipContents="true">
-                  <Children>
-                    <TextWidget Id="ReplyText" Text="@CompanionText"
-                                WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                VerticalAlignment="Top" HorizontalAlignment="Left"
-                                MarginRight="12"
-                                Brush="FullScreenNotice.Text" />
-                  </Children>
-                </Widget>
-              </Children>
-            </ScrollablePanel>
-            <ScrollbarWidget Id="ReplyScrollbar" WidthSizePolicy="Fixed" SuggestedWidth="8"
-                              HeightSizePolicy="Fixed" SuggestedHeight="270"
-                              HorizontalAlignment="Right" VerticalAlignment="Top"
-                              MarginTop="65" MarginRight="10"
-                              AlignmentAxis="Vertical" Handle="ReplyScrollbarHandle" MaxValue="100" MinValue="0">
-              <Children>
-                <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
-                        HorizontalAlignment="Center" Sprite="BlankWhiteSquare_9" Color="#5a4033FF" AlphaFactor="0.2" />
-                <ImageWidget Id="ReplyScrollbarHandle" WidthSizePolicy="Fixed" SuggestedWidth="8"
-                             HeightSizePolicy="Fixed" SuggestedHeight="10" HorizontalAlignment="Center"
-                             Brush="FaceGen.Scrollbar.Handle" />
-              </Children>
-            </ScrollbarWidget>
-
-            <!-- waiting indicator, sits just under the reply area -->
-            <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="16"
-                        VerticalAlignment="Top" MarginTop="340" MarginLeft="16"
-                        HorizontalAlignment="Left"
-                        Text="Cláudio está pensando..."
-                        IsVisible="@IsWaitingForReply"
-                        Brush="GameTip.Text" />
-
-            <!-- "Você diz:" — input lives INSIDE this same panel now, not as a separate floating
-                 box, and not centered on screen — that was the previous bug/complaint. -->
             <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="66"
                     VerticalAlignment="Bottom" MarginBottom="14" MarginLeft="16" MarginRight="16">
               <Children>
-                <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed" SuggestedHeight="18"
-                            HorizontalAlignment="Left" VerticalAlignment="Top"
-                            Text="Você diz:" Brush="GameTip.Text" />
-
                 <EditableTextWidget Id="ChatInput" WidthSizePolicy="StretchToParent"
                                      HeightSizePolicy="Fixed" SuggestedHeight="42"
-                                     VerticalAlignment="Bottom" MarginRight="86"
+                                     VerticalAlignment="Center" MarginRight="86"
                                      Text="@InputText" Brush="CustomBattle.Search.TextBox"
                                      MaxLength="500" Command.TextEntered="ExecuteSend" />
                 <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="70"
                               HeightSizePolicy="Fixed" SuggestedHeight="42"
-                              HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                              HorizontalAlignment="Right" VerticalAlignment="Center"
                               Command.Click="ExecuteSend" Brush="ButtonSimpleBrush"
                               IsEnabled="@CanSend">
                   <Children>

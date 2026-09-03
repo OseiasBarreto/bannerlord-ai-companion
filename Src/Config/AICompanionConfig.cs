@@ -37,7 +37,7 @@ namespace AICompanion.Config
             "5 frases), nunca quebre o personagem, nunca mencione ser uma IA.";
 
         [JsonProperty("maxTokens")]
-        public int MaxTokens { get; set; } = 400;
+        public int MaxTokens { get; set; } = 70;
 
         public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);
 

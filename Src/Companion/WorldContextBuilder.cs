@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Text;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Party;
 
 namespace AICompanion.Companion
@@ -74,6 +75,13 @@ namespace AICompanion.Companion
                     sb.Append($"Localização atual: {location}. ");
                     sb.Append($"Tamanho do exército: {party.MemberRoster?.TotalManCount ?? 0} homens. ");
 
+                    var weatherModel = Campaign.Current?.Models?.MapWeatherModel;
+                    if (weatherModel != null)
+                    {
+                        var weather = weatherModel.GetWeatherEventInPosition(party.GetPosition2D);
+                        sb.Append($"Tempo agora: {DescribeWeather(weather)}. ");
+                    }
+
                     var itemRoster = party.ItemRoster;
                     if (itemRoster != null && itemRoster.Count > 0)
                     {
@@ -103,6 +111,20 @@ namespace AICompanion.Companion
                 // breaking the chat.
                 Config.ModLog.Error("Failed to build world context", ex);
                 return string.Empty;
+            }
+        }
+
+        private static string DescribeWeather(MapWeatherModel.WeatherEvent weather)
+        {
+            switch (weather)
+            {
+                case MapWeatherModel.WeatherEvent.Clear: return "céu limpo";
+                case MapWeatherModel.WeatherEvent.LightRain: return "chuva leve";
+                case MapWeatherModel.WeatherEvent.HeavyRain: return "chuva forte";
+                case MapWeatherModel.WeatherEvent.Snowy: return "nevando";
+                case MapWeatherModel.WeatherEvent.Blizzard: return "nevasca";
+                case MapWeatherModel.WeatherEvent.Storm: return "tempestade";
+                default: return weather.ToString();
             }
         }
     }
