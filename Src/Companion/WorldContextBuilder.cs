@@ -29,7 +29,7 @@ namespace AICompanion.Companion
                 sb.Append("Contexto atual do mundo (use para comentar de forma natural, sem ")
                   .Append("recitar como lista): ");
 
-                sb.Append($"Data de Calradia: {CampaignTime.Now.GetDayOfSeason + 1}º dia da estação. ");
+                sb.Append($"Data atual: {CampaignTime.Now.GetDayOfSeason + 1}º dia da estação. ");
                 sb.Append($"Jogador: {hero.Name}, clã {clan?.Name}, ");
                 sb.Append($"renome {clan?.Renown:0}, clã de nível {clan?.Tier}. ");
 
@@ -73,9 +73,23 @@ namespace AICompanion.Companion
                         : "em campo aberto, entre assentamentos";
                     sb.Append($"Localização atual: {location}. ");
                     sb.Append($"Tamanho do exército: {party.MemberRoster?.TotalManCount ?? 0} homens. ");
+
+                    var itemRoster = party.ItemRoster;
+                    if (itemRoster != null && itemRoster.Count > 0)
+                    {
+                        var totalUnits = itemRoster.Sum(e => e.Amount);
+                        sb.Append($"Inventário: {totalUnits} unidades de itens, em " +
+                                  $"{itemRoster.Count} tipos diferentes (valor total aprox. " +
+                                  $"{itemRoster.TotalValue} de ouro). ");
+                    }
+                    else
+                    {
+                        sb.Append("Inventário: vazio. ");
+                    }
                 }
 
                 sb.Append($"Ouro do jogador: {hero.Gold}. ");
+                sb.Append($"Influência do clã: {clan?.Influence:0}. ");
 
                 sb.Append("Como Cláudio realmente enxerga o jogador agora, com base em tudo que " +
                           $"viu até aqui: {CompanionOpinionBehavior.DescribeForPrompt()} ");

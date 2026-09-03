@@ -19,6 +19,7 @@
     <BannerlordDir Condition="'$(BannerlordDir)' == ''">$(BANNERLORD_DIR)</BannerlordDir>
     <BannerlordBin>$(BannerlordDir)\bin\Win64_Shipping_Client</BannerlordBin>
     <BannerlordNativeBin>$(BannerlordDir)\Modules\Native\bin\Win64_Shipping_Client</BannerlordNativeBin>
+    <BannerlordHarmonyBin>$(BannerlordDir)\Modules\Bannerlord.Harmony\bin\Win64_Shipping_Client</BannerlordHarmonyBin>
   </PropertyGroup>
 
   <ItemGroup>
@@ -90,6 +91,18 @@
     <!-- MissionView lives here, not in the main bin folder — it ships with the Native module. -->
     <Reference Include="TaleWorlds.MountAndBlade.View">
       <HintPath>$(BannerlordNativeBin)\TaleWorlds.MountAndBlade.View.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Holds MissionConversationVM (the "Você diz" nameplate's DialogText) — needed to patch
+         the vanilla conversation box directly instead of drawing a separate panel. -->
+    <Reference Include="TaleWorlds.CampaignSystem.ViewModelCollection">
+      <HintPath>$(BannerlordBin)\TaleWorlds.CampaignSystem.ViewModelCollection.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Ships with the Bannerlord.Harmony module (already a load-order dependency for TOR); used
+         to redirect the vanilla dialogue text into Cláudio's actual reply. -->
+    <Reference Include="0Harmony">
+      <HintPath>$(BannerlordHarmonyBin)\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

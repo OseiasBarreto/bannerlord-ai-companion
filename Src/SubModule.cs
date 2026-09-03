@@ -1,7 +1,9 @@
+using System.Reflection;
 using AICompanion.Chat;
 using AICompanion.Companion;
 using AICompanion.Config;
 using AICompanion.Dialog;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.Core;
@@ -17,6 +19,16 @@ namespace AICompanion
             base.OnSubModuleLoad();
             Config.ModLog.Info("OnSubModuleLoad — AI Companion starting up.");
             AICompanionConfig.Reload();
+
+            try
+            {
+                new Harmony("AICompanion").PatchAll(Assembly.GetExecutingAssembly());
+                Config.ModLog.Info("Harmony patches applied (DialogTextPatch).");
+            }
+            catch (System.Exception ex)
+            {
+                Config.ModLog.Error("Failed to apply Harmony patches", ex);
+            }
         }
 
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)

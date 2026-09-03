@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using AICompanion.Companion;
 using AICompanion.Config;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 using TaleWorlds.Library;
 
 namespace AICompanion.Chat
@@ -23,48 +25,63 @@ namespace AICompanion.Chat
         private readonly ClaudeApiClient _client = new ClaudeApiClient();
         private readonly ConcurrentQueue<Action> _mainThreadQueue = new ConcurrentQueue<Action>();
 
-        private MBBindingList<ChatMessageVM> _messages = new MBBindingList<ChatMessageVM>();
+        private string _companionText = string.Empty;
+        private string _playerText = string.Empty;
         private string _inputText = string.Empty;
         private bool _isWaitingForReply;
         private string _title = CompanionDefinition.FullTitle;
 
         public Action CloseRequested;
 
+        // Same clan banner shown on the vanilla conversation nameplate (SPConversation.xml's
+        // "Conversed Hero Banner") — Cláudio wears the player's own clan colors, since he's a
+        // member of that clan/party, not a separate faction.
+        [DataSourceProperty]
+        public ImageIdentifierVM CompanionBanner { get; }
+
         public ChatVM()
         {
+            CompanionBanner = new BannerImageIdentifierVM(Hero.MainHero?.Clan?.Banner, false);
+
             if (!AICompanionConfig.Instance.IsConfigured)
             {
-                Messages.Add(new ChatMessageVM(new ChatMessage(ChatRole.System,
-                    "Nenhuma chave de API configurada. Crie " +
+                CompanionText = "Nenhuma chave de API configurada. Crie " +
                     "Modules/AICompanion/ai-companion.config.json com sua chave da Anthropic " +
-                    "para conversar com Cláudio.")));
+                    "para conversar com Cláudio.";
                 return;
             }
 
             var previous = ChatHistoryBehavior.Instance?.History;
-            if (previous != null && previous.Count > 0)
+            var lastCompanionLine = previous?.LastOrDefault(m => m.Role == ChatRole.Companion);
+            CompanionText = lastCompanionLine?.Text ?? string.Empty;
+        }
+
+        // A vanilla-style single-turn display, not a scrolling log: each reply replaces what was
+        // shown before, same as how the game's own conversation box works — the full back and
+        // forth still gets persisted to the save via ChatHistoryBehavior, just not all rendered
+        // on screen at once.
+        [DataSourceProperty]
+        public string CompanionText
+        {
+            get => _companionText;
+            set
             {
-                foreach (var message in previous)
-                {
-                    Messages.Add(new ChatMessageVM(message));
-                }
-            }
-            else
-            {
-                AddMessage(ChatRole.Companion,
-                    "Fala, viajante. Sobre o que quer conversar hoje?");
+                if (value == _companionText) return;
+                _companionText = value;
+                OnPropertyChangedWithValue(value, nameof(CompanionText));
+                PushToVanillaBox();
             }
         }
 
         [DataSourceProperty]
-        public MBBindingList<ChatMessageVM> Messages
+        public string PlayerText
         {
-            get => _messages;
+            get => _playerText;
             set
             {
-                if (value == _messages) return;
-                _messages = value;
-                OnPropertyChangedWithValue(value, nameof(Messages));
+                if (value == _playerText) return;
+                _playerText = value;
+                OnPropertyChangedWithValue(value, nameof(PlayerText));
             }
         }
 
@@ -90,6 +107,7 @@ namespace AICompanion.Chat
                 _isWaitingForReply = value;
                 OnPropertyChangedWithValue(value, nameof(IsWaitingForReply));
                 OnPropertyChangedWithValue(CanSend, nameof(CanSend));
+                PushToVanillaBox();
             }
         }
 
@@ -112,7 +130,21 @@ namespace AICompanion.Chat
                 if (value == _isOpen) return;
                 _isOpen = value;
                 OnPropertyChangedWithValue(value, nameof(IsOpen));
+
+                // Scoped strictly to our own conversation: while true, the vanilla nameplate box
+                // ("Claro. Diga o que pensa.") shows Cláudio's real reply instead — every other
+                // NPC's conversation elsewhere in the game is left completely untouched.
+                ConversationVmBridge.IsActive = value;
+                if (value)
+                {
+                    PushToVanillaBox();
+                }
             }
+        }
+
+        private void PushToVanillaBox()
+        {
+            ConversationVmBridge.Push(IsWaitingForReply ? "..." : CompanionText);
         }
 
         [DataSourceProperty]
@@ -146,6 +178,7 @@ namespace AICompanion.Chat
 
             InputText = string.Empty;
             AddMessage(ChatRole.Player, text);
+            PlayerText = text;
             IsWaitingForReply = true;
             ModLog.Info("ChatVM.ExecuteSend: player message added, calling SendAsync.");
 
@@ -156,13 +189,21 @@ namespace AICompanion.Chat
 
             _client.SendAsync(historySnapshot).ContinueWith(task =>
             {
-                if (task.IsFaulted)
+                // A timed-out HttpClient request throws OperationCanceledException, which puts
+                // the task in the Canceled state, NOT Faulted — task.IsFaulted alone missed this.
+                // The old code then fell into the "success" branch and read task.Result on a
+                // canceled task, which throws inside this very continuation with nothing to
+                // observe it, so the queued UI update (and IsWaitingForReply = false) never ran.
+                // That's the exact "stuck on 'Cláudio está pensando...' forever" bug.
+                if (task.IsFaulted || task.IsCanceled)
                 {
-                    var error = task.Exception?.InnerException?.Message ?? "erro desconhecido";
-                    ModLog.Error($"ChatVM.ExecuteSend: task faulted: {error}");
+                    var error = task.IsCanceled
+                        ? "sem resposta a tempo (tempo esgotado)"
+                        : task.Exception?.InnerException?.Message ?? "erro desconhecido";
+                    ModLog.Error($"ChatVM.ExecuteSend: task faulted/canceled: {error}");
                     _mainThreadQueue.Enqueue(() =>
                     {
-                        AddMessage(ChatRole.System, $"(Cláudio não respondeu: {error})");
+                        CompanionText = $"(Cláudio não respondeu: {error})";
                         IsWaitingForReply = false;
                     });
                 }
@@ -173,9 +214,10 @@ namespace AICompanion.Chat
                     _mainThreadQueue.Enqueue(() =>
                     {
                         AddMessage(ChatRole.Companion, reply);
+                        CompanionText = reply;
                         IsWaitingForReply = false;
                         ModLog.Info($"ChatVM.ExecuteSend: reply applied on main thread. " +
-                                    $"Messages.Count={Messages.Count}, IsWaitingForReply={IsWaitingForReply}.");
+                                    $"IsWaitingForReply={IsWaitingForReply}.");
                     });
                 }
             });
@@ -200,21 +242,17 @@ namespace AICompanion.Chat
             }
         }
 
+        // Persists to the save (so the model still has real history for context on the next
+        // message, and so past turns survive save/load) without necessarily being shown —
+        // CompanionText/PlayerText handle the single-turn on-screen display separately.
         private void AddMessage(ChatRole role, string text)
         {
-            var message = new ChatMessage(role, text);
-            if (role != ChatRole.System)
+            if (role == ChatRole.System)
             {
-                ChatHistoryBehavior.Instance?.Append(message);
+                return;
             }
-            Messages.Add(new ChatMessageVM(message));
 
-            // Belt-and-suspenders: MBBindingList.Add is supposed to notify the bound ListPanel
-            // on its own, but a new reply wasn't visibly appearing on a live test even though it
-            // was genuinely added (confirmed in the log). Forcing a property-changed on the list
-            // itself makes sure the panel re-reads it regardless of whether the Add-notification
-            // path works in this GauntletLayer/MissionScreen hosting context.
-            OnPropertyChangedWithValue(Messages, nameof(Messages));
+            ChatHistoryBehavior.Instance?.Append(new ChatMessage(role, text));
         }
     }
 }
