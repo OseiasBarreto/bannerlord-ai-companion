@@ -89,8 +89,15 @@ namespace AICompanion.Chat
                 if (value == _isWaitingForReply) return;
                 _isWaitingForReply = value;
                 OnPropertyChangedWithValue(value, nameof(IsWaitingForReply));
+                OnPropertyChangedWithValue(CanSend, nameof(CanSend));
             }
         }
+
+        // Gauntlet XML bindings only support direct property references (no negation/ternary
+        // in the attribute string), so the "enabled when not waiting" polarity has to live here
+        // instead of in the prefab.
+        [DataSourceProperty]
+        public bool CanSend => !IsWaitingForReply;
 
         [DataSourceProperty]
         public string Title

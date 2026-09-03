@@ -2,13 +2,16 @@
   <Window>
     <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent">
       <Children>
-        <!-- dimmed backdrop -->
-        <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent" Brush="AICompanion.ChatBackdrop" />
+        <!-- dimmed backdrop — reusing a real, always-loaded vanilla brush instead of a
+             custom one, since a custom Brush file that isn't actually registered by the
+             engine renders as nothing (which is what caused the "freeze": an invisible,
+             input-blocking screen with no way to see or close it). -->
+        <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent" Brush="ButtonSimpleBrush" />
 
         <Widget WidthSizePolicy="Fixed" SuggestedWidth="700"
                 HeightSizePolicy="Fixed" SuggestedHeight="820"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                Brush="AICompanion.ChatPanel">
+                Brush="EscapeMenu.Background">
           <Children>
             <!-- title bar -->
             <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="Fixed" SuggestedHeight="60"
@@ -16,11 +19,11 @@
               <Children>
                 <TextWidget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Text="@Title" Brush="AICompanion.ChatTitle" />
+                            Text="@Title" Brush="FullScreenNotice.Title" />
                 <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="40"
                               HeightSizePolicy="Fixed" SuggestedHeight="40"
                               HorizontalAlignment="Right" VerticalAlignment="Center"
-                              Command.Click="ExecuteClose" Brush="AICompanion.CloseButton" />
+                              Command.Click="ExecuteClose" Brush="FullScreenNotice.CloseButton" />
               </Children>
             </Widget>
 
@@ -29,15 +32,15 @@
                        HeightSizePolicy="Fixed" SuggestedHeight="640"
                        VerticalAlignment="Top" MarginTop="60"
                        StackLayout.LayoutMethod="VerticalBottomToTop"
-                       ItemsSource="Messages">
+                       DataSource="{Messages}">
               <ItemTemplate>
-                <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="StretchToParent"
+                <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverChildren"
                         MarginBottom="10">
                   <Children>
                     <TextWidget Text="@Text"
-                                WidthSizePolicy="CoverParent" HeightSizePolicy="StretchToParent"
-                                HorizontalAlignment="@IsPlayer(Right,Left)"
-                                Brush="AICompanion.ChatBubble" />
+                                WidthSizePolicy="CoverParent" HeightSizePolicy="CoverChildren"
+                                HorizontalAlignment="Left"
+                                Brush="FullScreenNotice.Text" />
                   </Children>
                 </Widget>
               </ItemTemplate>
@@ -49,7 +52,7 @@
                         HorizontalAlignment="Center"
                         Text="Cláudio está pensando..."
                         IsVisible="@IsWaitingForReply"
-                        Brush="AICompanion.ChatTyping" />
+                        Brush="GameTip.Text" />
 
             <!-- input row -->
             <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="Fixed" SuggestedHeight="60"
@@ -57,12 +60,12 @@
               <Children>
                 <EditableTextWidget Id="ChatInput" WidthSizePolicy="StretchToParent"
                                      HeightSizePolicy="CoverParent" MarginRight="90"
-                                     Text="@InputText" Brush="AICompanion.ChatInput"
+                                     Text="@InputText" Brush="CustomBattle.Search.TextBox"
                                      MaxLength="500" />
                 <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="80"
                               HeightSizePolicy="CoverParent" HorizontalAlignment="Right"
-                              Command.Click="ExecuteSend" Brush="AICompanion.SendButton"
-                              IsEnabled="@IsWaitingForReply(false,true)" />
+                              Command.Click="ExecuteSend" Brush="ButtonSimpleBrush"
+                              IsEnabled="@CanSend" />
               </Children>
             </Widget>
           </Children>

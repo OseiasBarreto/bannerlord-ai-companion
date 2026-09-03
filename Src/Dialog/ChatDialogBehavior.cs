@@ -2,7 +2,6 @@ using AICompanion.Chat;
 using AICompanion.Companion;
 using AICompanion.Config;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.ScreenSystem;
 
 namespace AICompanion.Dialog
 {
@@ -69,7 +68,17 @@ namespace AICompanion.Dialog
 
         private static void OpenChatScreen()
         {
-            ScreenManager.PushScreen(new AICompanion.Chat.ChatScreen());
+            // Doing this straight from inside a dialog consequence fights with the conversation
+            // system's own cleanup — deferring to ConversationEndOneShot lets the conversation
+            // actually finish closing first.
+            ModLog.Info("OpenChatScreen: deferring to ConversationEndOneShot.");
+            Campaign.Current.ConversationManager.ConversationEndOneShot += OpenChatOverlay;
+        }
+
+        private static void OpenChatOverlay()
+        {
+            ModLog.Info("OpenChatOverlay: conversation ended, opening chat overlay now.");
+            ChatOverlay.Open();
         }
     }
 }
