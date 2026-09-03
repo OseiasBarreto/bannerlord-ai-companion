@@ -1,4 +1,3 @@
-using AICompanion.Chat;
 using AICompanion.Companion;
 using AICompanion.Config;
 using TaleWorlds.CampaignSystem;
@@ -68,17 +67,21 @@ namespace AICompanion.Dialog
 
         private static void OpenChatScreen()
         {
-            // Doing this straight from inside a dialog consequence fights with the conversation
-            // system's own cleanup — deferring to ConversationEndOneShot lets the conversation
-            // actually finish closing first.
-            ModLog.Info("OpenChatScreen: deferring to ConversationEndOneShot.");
-            Campaign.Current.ConversationManager.ConversationEndOneShot += OpenChatOverlay;
-        }
+            // The layer itself was already built (invisible, inert) back when this conversation
+            // began — see ChatConversationView.OnConversationBegin. This just makes it visible
+            // and takes input. Ported from wonderingmark123/Bannerlord.ChatGPT's
+            // UpdateChatStatus(true) pattern: building the layer this late in the conversation
+            // hit MissionScreen == null on a real test (confirmed via crash log).
+            var view = TaleWorlds.MountAndBlade.Mission.Current
+                ?.GetMissionBehavior<AICompanion.Mission.ChatConversationView>();
+            if (view == null)
+            {
+                ModLog.Error("OpenChatScreen: no ChatConversationView found on the current mission.");
+                return;
+            }
 
-        private static void OpenChatOverlay()
-        {
-            ModLog.Info("OpenChatOverlay: conversation ended, opening chat overlay now.");
-            ChatOverlay.Open();
+            ModLog.Info("OpenChatScreen: activating chat via ChatConversationView.");
+            view.SetActive(true);
         }
     }
 }

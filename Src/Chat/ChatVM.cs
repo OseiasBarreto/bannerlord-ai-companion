@@ -99,6 +99,22 @@ namespace AICompanion.Chat
         [DataSourceProperty]
         public bool CanSend => !IsWaitingForReply;
 
+        private bool _isOpen;
+
+        // Layer is created once at conversation start and kept around inert (see
+        // ChatConversationView) — this is what actually shows/hides it.
+        [DataSourceProperty]
+        public bool IsOpen
+        {
+            get => _isOpen;
+            set
+            {
+                if (value == _isOpen) return;
+                _isOpen = value;
+                OnPropertyChangedWithValue(value, nameof(IsOpen));
+            }
+        }
+
         [DataSourceProperty]
         public string Title
         {

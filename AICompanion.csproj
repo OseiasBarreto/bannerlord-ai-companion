@@ -18,6 +18,7 @@
     -->
     <BannerlordDir Condition="'$(BannerlordDir)' == ''">$(BANNERLORD_DIR)</BannerlordDir>
     <BannerlordBin>$(BannerlordDir)\bin\Win64_Shipping_Client</BannerlordBin>
+    <BannerlordNativeBin>$(BannerlordDir)\Modules\Native\bin\Win64_Shipping_Client</BannerlordNativeBin>
   </PropertyGroup>
 
   <ItemGroup>
@@ -84,6 +85,11 @@
     </Reference>
     <Reference Include="TaleWorlds.InputSystem">
       <HintPath>$(BannerlordBin)\TaleWorlds.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- MissionView lives here, not in the main bin folder — it ships with the Native module. -->
+    <Reference Include="TaleWorlds.MountAndBlade.View">
+      <HintPath>$(BannerlordNativeBin)\TaleWorlds.MountAndBlade.View.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

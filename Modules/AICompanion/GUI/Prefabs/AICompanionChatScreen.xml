@@ -1,44 +1,44 @@
 <Prefab>
   <Window>
-    <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent">
+    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" IsVisible="@IsOpen">
       <Children>
         <!-- dimmed backdrop — reusing a real, always-loaded vanilla brush instead of a
              custom one, since a custom Brush file that isn't actually registered by the
              engine renders as nothing (which is what caused the "freeze": an invisible,
              input-blocking screen with no way to see or close it). -->
-        <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent" Brush="ButtonSimpleBrush" />
+        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="ButtonSimpleBrush" />
 
         <Widget WidthSizePolicy="Fixed" SuggestedWidth="700"
                 HeightSizePolicy="Fixed" SuggestedHeight="820"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                Brush="EscapeMenu.Background">
+                Brush="ButtonSimpleBrush">
           <Children>
             <!-- title bar -->
-            <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="Fixed" SuggestedHeight="60"
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="60"
                     VerticalAlignment="Top">
               <Children>
-                <TextWidget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverParent"
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
                             Text="@Title" Brush="FullScreenNotice.Title" />
                 <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="40"
                               HeightSizePolicy="Fixed" SuggestedHeight="40"
                               HorizontalAlignment="Right" VerticalAlignment="Center"
-                              Command.Click="ExecuteClose" Brush="FullScreenNotice.CloseButton" />
+                              Command.Click="ExecuteClose" Brush="ButtonSimpleBrush" />
               </Children>
             </Widget>
 
             <!-- message history -->
-            <ListPanel Id="ChatHistory" WidthSizePolicy="CoverParent"
+            <ListPanel Id="ChatHistory" WidthSizePolicy="StretchToParent"
                        HeightSizePolicy="Fixed" SuggestedHeight="640"
                        VerticalAlignment="Top" MarginTop="60"
                        StackLayout.LayoutMethod="VerticalBottomToTop"
                        DataSource="{Messages}">
               <ItemTemplate>
-                <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="CoverChildren"
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                         MarginBottom="10">
                   <Children>
                     <TextWidget Text="@Text"
-                                WidthSizePolicy="CoverParent" HeightSizePolicy="CoverChildren"
+                                WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                 HorizontalAlignment="Left"
                                 Brush="FullScreenNotice.Text" />
                   </Children>
@@ -47,7 +47,7 @@
             </ListPanel>
 
             <!-- waiting indicator -->
-            <TextWidget WidthSizePolicy="CoverParent" HeightSizePolicy="Fixed" SuggestedHeight="20"
+            <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="20"
                         VerticalAlignment="Bottom" MarginBottom="70"
                         HorizontalAlignment="Center"
                         Text="Cláudio está pensando..."
@@ -55,15 +55,15 @@
                         Brush="GameTip.Text" />
 
             <!-- input row -->
-            <Widget WidthSizePolicy="CoverParent" HeightSizePolicy="Fixed" SuggestedHeight="60"
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="60"
                     VerticalAlignment="Bottom">
               <Children>
                 <EditableTextWidget Id="ChatInput" WidthSizePolicy="StretchToParent"
-                                     HeightSizePolicy="CoverParent" MarginRight="90"
+                                     HeightSizePolicy="StretchToParent" MarginRight="90"
                                      Text="@InputText" Brush="CustomBattle.Search.TextBox"
                                      MaxLength="500" />
                 <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="80"
-                              HeightSizePolicy="CoverParent" HorizontalAlignment="Right"
+                              HeightSizePolicy="StretchToParent" HorizontalAlignment="Right"
                               Command.Click="ExecuteSend" Brush="ButtonSimpleBrush"
                               IsEnabled="@CanSend" />
               </Children>

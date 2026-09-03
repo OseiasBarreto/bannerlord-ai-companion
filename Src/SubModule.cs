@@ -41,7 +41,10 @@ namespace AICompanion
         public override void OnMissionBehaviorInitialize(TaleWorlds.MountAndBlade.Mission mission)
         {
             base.OnMissionBehaviorInitialize(mission);
+            Config.ModLog.Info($"OnMissionBehaviorInitialize — Mission.Mode={mission.Mode}, " +
+                                $"SceneName={mission.SceneName}.");
             mission.AddMissionBehavior(new AICompanion.Mission.CompanionCommandMissionBehavior());
+            mission.AddMissionBehavior(new AICompanion.Mission.ChatConversationView());
         }
     }
 }
