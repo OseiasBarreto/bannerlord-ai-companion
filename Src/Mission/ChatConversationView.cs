@@ -104,9 +104,30 @@ namespace AICompanion.Mission
         public override void OnMissionScreenTick(float dt)
         {
             base.OnMissionScreenTick(dt);
+            Pump();
+        }
+
+        /// <summary>
+        /// Drains ChatVM's main-thread queue and checks the Escape safety net. Called both from
+        /// OnMissionScreenTick (in case it does fire) and from SubModule.OnApplicationTick, which
+        /// is what actually keeps this running — confirmed via logging that OnMissionScreenTick
+        /// never fires for this MissionView at all (its own MissionScreen reference stayed null),
+        /// so a queued chat reply just sat there forever, never applied to the visible Messages
+        /// list or clearing IsWaitingForReply. OnApplicationTick runs every real engine frame
+        /// independent of Mission/MissionScreen plumbing, so it can't have the same problem.
+        /// </summary>
+        public void Pump()
+        {
             _dataSource?.PumpMainThreadQueue();
 
-            if (_dataSource != null && _dataSource.IsOpen && Input.IsKeyPressed(InputKey.Escape))
+            // Must be fully qualified: MissionView (our base class) has its own instance
+            // property also named "Input" (an IInputContext tied to MissionScreen), which shadows
+            // the static TaleWorlds.InputSystem.Input class this line means to call. Since our
+            // MissionScreen is never populated in this hosting context, that inherited Input
+            // property getter itself throws NullReferenceException — confirmed as the exact crash
+            // via a real crash log (ManagedCrashCapture pointed straight at this line).
+            if (_dataSource != null && _dataSource.IsOpen &&
+                TaleWorlds.InputSystem.Input.IsKeyPressed(InputKey.Escape))
             {
                 SetActive(false);
             }

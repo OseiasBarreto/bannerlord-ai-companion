@@ -70,9 +70,15 @@ namespace AICompanion.Chat
                 {
                     var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                    if (!response.IsSuccessStatusCode)
+                    // OpenRouter can return HTTP 200 with an "error" object in the body instead
+                    // of a real HTTP error status — confirmed directly against the live API: a
+                    // free model being temporarily overloaded on the upstream provider's side
+                    // came back as 200 OK with {"error": {...}} and no "choices", which the old
+                    // code would've silently treated as a normal (empty) reply.
+                    var bodyErrorMessage = TryExtractError(body);
+                    if (!response.IsSuccessStatusCode || bodyErrorMessage != null)
                     {
-                        var errorMessage = TryExtractError(body) ?? $"HTTP {(int)response.StatusCode}";
+                        var errorMessage = bodyErrorMessage ?? $"HTTP {(int)response.StatusCode}";
                         Config.ModLog.Error($"OpenRouter call failed ({(int)response.StatusCode}): {errorMessage}");
                         throw new InvalidOperationException($"Falha na API da OpenRouter: {errorMessage}");
                     }

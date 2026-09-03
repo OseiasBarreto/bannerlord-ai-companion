@@ -46,5 +46,16 @@ namespace AICompanion
             mission.AddMissionBehavior(new AICompanion.Mission.CompanionCommandMissionBehavior());
             mission.AddMissionBehavior(new AICompanion.Mission.ChatConversationView());
         }
+
+        protected override void OnApplicationTick(float dt)
+        {
+            base.OnApplicationTick(dt);
+
+            // OnMissionScreenTick never fires on ChatConversationView (confirmed via logging —
+            // a reply sat queued forever, never applied), so pump it from here instead, which we
+            // already know runs every real engine frame.
+            TaleWorlds.MountAndBlade.Mission.Current
+                ?.GetMissionBehavior<AICompanion.Mission.ChatConversationView>()?.Pump();
+        }
     }
 }

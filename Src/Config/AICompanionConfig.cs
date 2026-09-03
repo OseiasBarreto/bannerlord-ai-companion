@@ -15,7 +15,7 @@ namespace AICompanion.Config
         public string ApiKey { get; set; } = string.Empty;
 
         [JsonProperty("model")]
-        public string Model { get; set; } = "nvidia/nemotron-3-ultra-550b-a55b:free";
+        public string Model { get; set; } = "minimax/minimax-m3:free";
 
         [JsonProperty("systemPrompt")]
         public string SystemPrompt { get; set; } =

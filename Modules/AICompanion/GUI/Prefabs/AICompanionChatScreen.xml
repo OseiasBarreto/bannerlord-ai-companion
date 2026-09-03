@@ -2,16 +2,17 @@
   <Window>
     <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" IsVisible="@IsOpen">
       <Children>
-        <!-- dimmed backdrop — reusing a real, always-loaded vanilla brush instead of a
-             custom one, since a custom Brush file that isn't actually registered by the
-             engine renders as nothing (which is what caused the "freeze": an invisible,
-             input-blocking screen with no way to see or close it). -->
-        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="ButtonSimpleBrush" />
+        <!-- dimmed backdrop — a plain Widget's Brush didn't reliably paint in this hosting
+             context (only interactive widgets did), so background panels now use a direct
+             Sprite attribute instead of a named Brush, matching how vanilla prefabs draw
+             static background panels (e.g. CharacterCreationClanNamingStage.xml). -->
+        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                Sprite="BlankWhiteSquare_9" Color="#000000B0" />
 
         <Widget WidthSizePolicy="Fixed" SuggestedWidth="700"
                 HeightSizePolicy="Fixed" SuggestedHeight="820"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                Brush="ButtonSimpleBrush">
+                Sprite="BlankWhiteSquare_9" Color="#1A1712F0">
           <Children>
             <!-- title bar -->
             <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="60"
@@ -61,7 +62,7 @@
                 <EditableTextWidget Id="ChatInput" WidthSizePolicy="StretchToParent"
                                      HeightSizePolicy="StretchToParent" MarginRight="90"
                                      Text="@InputText" Brush="CustomBattle.Search.TextBox"
-                                     MaxLength="500" />
+                                     MaxLength="500" Command.TextEntered="ExecuteSend" />
                 <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="80"
                               HeightSizePolicy="StretchToParent" HorizontalAlignment="Right"
                               Command.Click="ExecuteSend" Brush="ButtonSimpleBrush"

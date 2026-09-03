@@ -129,20 +129,25 @@ namespace AICompanion.Chat
 
         public void ExecuteSend()
         {
+            ModLog.Info($"ChatVM.ExecuteSend called. InputText='{InputText}', IsWaitingForReply={IsWaitingForReply}.");
+
             var text = InputText?.Trim();
             if (string.IsNullOrEmpty(text) || IsWaitingForReply)
             {
+                ModLog.Info("ChatVM.ExecuteSend: aborted (empty text or already waiting).");
                 return;
             }
 
             if (!AICompanionConfig.Instance.IsConfigured)
             {
+                ModLog.Error("ChatVM.ExecuteSend: aborted, config not set.");
                 return;
             }
 
             InputText = string.Empty;
             AddMessage(ChatRole.Player, text);
             IsWaitingForReply = true;
+            ModLog.Info("ChatVM.ExecuteSend: player message added, calling SendAsync.");
 
             var fullHistory = ChatHistoryBehavior.Instance?.History ?? (IReadOnlyList<ChatMessage>)new List<ChatMessage>();
             var historySnapshot = fullHistory
@@ -154,6 +159,7 @@ namespace AICompanion.Chat
                 if (task.IsFaulted)
                 {
                     var error = task.Exception?.InnerException?.Message ?? "erro desconhecido";
+                    ModLog.Error($"ChatVM.ExecuteSend: task faulted: {error}");
                     _mainThreadQueue.Enqueue(() =>
                     {
                         AddMessage(ChatRole.System, $"(Cláudio não respondeu: {error})");
@@ -163,10 +169,13 @@ namespace AICompanion.Chat
                 else
                 {
                     var reply = task.Result;
+                    ModLog.Info($"ChatVM.ExecuteSend: reply received, length={reply?.Length}. Queuing UI update.");
                     _mainThreadQueue.Enqueue(() =>
                     {
                         AddMessage(ChatRole.Companion, reply);
                         IsWaitingForReply = false;
+                        ModLog.Info($"ChatVM.ExecuteSend: reply applied on main thread. " +
+                                    $"Messages.Count={Messages.Count}, IsWaitingForReply={IsWaitingForReply}.");
                     });
                 }
             });
@@ -174,9 +183,17 @@ namespace AICompanion.Chat
 
         public void ExecuteClose() => CloseRequested?.Invoke();
 
+        private bool _loggedFirstPump;
+
         /// <summary>Must be called once per frame from the owning screen.</summary>
         public void PumpMainThreadQueue()
         {
+            if (!_loggedFirstPump)
+            {
+                _loggedFirstPump = true;
+                ModLog.Info("ChatVM.PumpMainThreadQueue: first tick confirmed running.");
+            }
+
             while (_mainThreadQueue.TryDequeue(out var action))
             {
                 action();
@@ -191,6 +208,13 @@ namespace AICompanion.Chat
                 ChatHistoryBehavior.Instance?.Append(message);
             }
             Messages.Add(new ChatMessageVM(message));
+
+            // Belt-and-suspenders: MBBindingList.Add is supposed to notify the bound ListPanel
+            // on its own, but a new reply wasn't visibly appearing on a live test even though it
+            // was genuinely added (confirmed in the log). Forcing a property-changed on the list
+            // itself makes sure the panel re-reads it regardless of whether the Add-notification
+            // path works in this GauntletLayer/MissionScreen hosting context.
+            OnPropertyChangedWithValue(Messages, nameof(Messages));
         }
     }
 }
