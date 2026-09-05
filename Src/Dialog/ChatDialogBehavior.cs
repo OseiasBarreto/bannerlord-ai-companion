@@ -51,9 +51,18 @@ namespace AICompanion.Dialog
                 null,
                 null);
 
+            // "companion_roles" is the vanilla node listing Engenheiro/Cirurgião/Intendente/
+            // Batedor ("Que função você tem em mente?") — confirmed live via
+            // ConversationTokenLogger (reflecting ConversationManager.ActiveToken/stateMap):
+            // the real transition is hero_main_options -> companion_role -> companion_roles,
+            // and the role list itself is shown exactly when the active token is
+            // "companion_roles". Two earlier guesses ("party_role_assignment", then
+            // "companion_okay_to_role_selection", both inferred from method/string names
+            // without live confirmation) were wrong. Minha Mão belongs in this same list
+            // conceptually, not loose in the main hero menu.
             starter.AddPlayerLine(
                 "aicompanion_promote",
-                "hero_main_options",
+                "companion_roles",
                 "aicompanion_promote_response",
                 "{=aicompanion_promote_line}Quero que você seja minha mão.",
                 IsPromotableCompanion,
@@ -69,7 +78,7 @@ namespace AICompanion.Dialog
 
             starter.AddPlayerLine(
                 "aicompanion_dismiss",
-                "hero_main_options",
+                "companion_roles",
                 "aicompanion_dismiss_response",
                 "{=aicompanion_dismiss_line}Não preciso mais que você seja minha mão.",
                 IsTalkingToHolder,
