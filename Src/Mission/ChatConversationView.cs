@@ -136,6 +136,16 @@ namespace AICompanion.Mission
         public override void OnConversationEnd()
         {
             base.OnConversationEnd();
+
+            // The player can leave a conversation without ever clicking our own "Fechar" button
+            // (walking away, the game ending the dialogue on its own, etc.) — SetActive(false)
+            // is what normally clears the input-lock and the DialogText hijack, so if we skip
+            // straight to removing the layer without it, both stay stuck "on": the vanilla
+            // dialogue box then shows nothing but stale/overridden text on the next conversation
+            // (just "Clique para continuar"), and Escape stops opening the menu because
+            // InputRestrictions never got released. Confirmed live: exactly this got a real
+            // playthrough stuck with no way out but force-quitting the game.
+            SetActive(false);
             RemoveLayerIfAny();
         }
 
@@ -147,10 +157,18 @@ namespace AICompanion.Mission
             }
 
             ScreenManager.TryLoseFocus(_layer);
+            _layer.InputRestrictions.SetInputRestrictions(false, InputUsageMask.Invalid);
             _hostScreen?.RemoveLayer(_layer);
             _layer = null;
             _dataSource = null;
             _hostScreen = null;
+
+            // Belt-and-suspenders: this static bridge must never survive past this view's own
+            // lifetime, regardless of which path got us here — a new conversation's
+            // MissionConversationVM must never inherit a hijacked DialogText from this one.
+            AICompanion.Companion.ConversationVmBridge.IsActive = false;
+            AICompanion.Companion.ConversationVmBridge.Instance = null;
+
             ModLog.Info("ChatConversationView: layer removed.");
         }
     }

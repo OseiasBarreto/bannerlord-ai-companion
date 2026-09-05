@@ -19,7 +19,9 @@
     <BannerlordDir Condition="'$(BannerlordDir)' == ''">$(BANNERLORD_DIR)</BannerlordDir>
     <BannerlordBin>$(BannerlordDir)\bin\Win64_Shipping_Client</BannerlordBin>
     <BannerlordNativeBin>$(BannerlordDir)\Modules\Native\bin\Win64_Shipping_Client</BannerlordNativeBin>
-    <BannerlordHarmonyBin>$(BannerlordDir)\Modules\Bannerlord.Harmony\bin\Win64_Shipping_Client</BannerlordHarmonyBin>
+    <!-- This mod is now Workshop-subscribed rather than a manual Modules/ copy — the game
+         discovers it automatically at that path without it needing to live under Modules/. -->
+    <BannerlordHarmonyBin>B:\SteamLibrary\steamapps\workshop\content\261550\2859188632\bin\Win64_Shipping_Client</BannerlordHarmonyBin>
   </PropertyGroup>
 
   <ItemGroup>
