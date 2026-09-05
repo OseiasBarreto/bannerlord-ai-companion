@@ -6,15 +6,18 @@ using TaleWorlds.Localization;
 namespace AICompanion.Companion
 {
     /// <summary>
-    /// Watches whether the player has become a kingdom's ruler and, when so, elevates the
-    /// companion from ordinary wanderer to "Mão do Rei" — a title, not a mechanical council
-    /// seat (Bannerlord's own council roles are assigned separately, in the kingdom screen).
-    /// The elevated status also flows into the chat system prompt via
-    /// <see cref="IsHandOfTheKing"/>, so Cláudio's tone changes once it happens.
+    /// Watches whether the player has become a kingdom's ruler and, when so, elevates whoever
+    /// currently holds "Minha Mão" to "Mão do Rei" — a display-name title only (Bannerlord's own
+    /// council roles are assigned separately, in the kingdom screen), not a mechanical change.
+    /// Only ever touches the hero's full display name via SetName's second argument; FirstName
+    /// stays untouched, so re-applying this never compounds into "X, a Mão do Rei, a Mão do Rei".
+    /// Also flows into the chat system prompt via <see cref="IsHandOfTheKing"/>.
     /// </summary>
     public sealed class HandOfTheKingBehavior : CampaignBehaviorBase
     {
         public static bool IsHandOfTheKing { get; private set; }
+
+        private string _titledHeroId;
 
         public override void RegisterEvents()
         {
@@ -27,6 +30,7 @@ namespace AICompanion.Companion
             var isHand = IsHandOfTheKing;
             dataStore.SyncData("AICompanion_IsHandOfTheKing", ref isHand);
             IsHandOfTheKing = isHand;
+            dataStore.SyncData("AICompanion_TitledHeroId", ref _titledHeroId);
         }
 
         private void CheckStatus()
@@ -34,37 +38,45 @@ namespace AICompanion.Companion
             var clan = Hero.MainHero?.Clan;
             var kingdom = clan?.Kingdom;
             var isRulerNow = kingdom != null && kingdom.RulingClan == clan;
+            var holder = AICompanionRoleBehavior.Instance?.CurrentHolder;
 
-            if (isRulerNow == IsHandOfTheKing)
+            // Revert whichever hero was previously titled if they're no longer the holder, or
+            // no longer applicable — never leave a stale "a Mão do Rei" title dangling on
+            // someone who was dismissed or replaced.
+            if (_titledHeroId != null && (holder == null || holder.StringId != _titledHeroId ||
+                                           !isRulerNow))
             {
-                return;
+                RevertTitle(_titledHeroId);
+                _titledHeroId = null;
             }
 
-            IsHandOfTheKing = isRulerNow;
-            UpdateCompanionTitle();
+            var wasHandOfTheKing = IsHandOfTheKing;
+            IsHandOfTheKing = isRulerNow && holder != null;
 
-            if (isRulerNow)
+            if (IsHandOfTheKing && _titledHeroId != holder.StringId)
             {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"{CompanionDefinition.Name} agora é a Mão do Rei — seu conselheiro mais " +
-                    "próximo desde que ascendeu ao trono.", Colors.Yellow));
+                ApplyTitle(holder);
+                _titledHeroId = holder.StringId;
+
+                if (!wasHandOfTheKing)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"{holder.FirstName} agora é a Mão do Rei — seu conselheiro mais " +
+                        "próximo desde que você ascendeu ao trono.", Colors.Yellow));
+                }
             }
         }
 
-        private void UpdateCompanionTitle()
+        private static void ApplyTitle(Hero hero)
         {
-            var hero = Hero.AllAliveHeroes
-                .FirstOrDefault(h => h.StringId == CompanionDefinition.HeroStringId);
-            if (hero == null)
-            {
-                return;
-            }
+            hero.SetName(hero.FirstName, new TextObject("{=aicompanion_hand_of_king}{FIRST_NAME}, a Mão do Rei")
+                .SetTextVariable("FIRST_NAME", hero.FirstName));
+        }
 
-            var title = IsHandOfTheKing
-                ? CompanionDefinition.HandOfTheKingTitle
-                : CompanionDefinition.FullTitle;
-
-            hero.SetName(new TextObject(CompanionDefinition.Name), new TextObject(title));
+        private static void RevertTitle(string heroId)
+        {
+            var hero = Hero.AllAliveHeroes.FirstOrDefault(h => h.StringId == heroId);
+            hero?.SetName(hero.FirstName, hero.FirstName);
         }
     }
 }

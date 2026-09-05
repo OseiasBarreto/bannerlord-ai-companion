@@ -29,25 +29,26 @@ namespace AICompanion.Chat
         private string _playerText = string.Empty;
         private string _inputText = string.Empty;
         private bool _isWaitingForReply;
-        private string _title = CompanionDefinition.FullTitle;
+        private string _title = string.Empty;
 
         public Action CloseRequested;
 
         // Same clan banner shown on the vanilla conversation nameplate (SPConversation.xml's
-        // "Conversed Hero Banner") — Cláudio wears the player's own clan colors, since he's a
-        // member of that clan/party, not a separate faction.
+        // "Conversed Hero Banner") — whoever holds "Minha Mão" wears the player's own clan
+        // colors, since they're a member of that clan, not a separate faction.
         [DataSourceProperty]
         public ImageIdentifierVM CompanionBanner { get; }
 
         public ChatVM()
         {
             CompanionBanner = new BannerImageIdentifierVM(Hero.MainHero?.Clan?.Banner, false);
+            Title = AICompanionRoleBehavior.Instance?.CurrentHolder?.Name?.ToString() ?? string.Empty;
 
             if (!AICompanionConfig.Instance.IsConfigured)
             {
                 CompanionText = "Nenhuma chave de API configurada. Crie " +
-                    "Modules/AICompanion/ai-companion.config.json com sua chave da Anthropic " +
-                    "para conversar com Cláudio.";
+                    "Modules/AICompanion/ai-companion.config.json com sua chave da API " +
+                    "pra poder conversar.";
                 return;
             }
 
@@ -203,7 +204,7 @@ namespace AICompanion.Chat
                     ModLog.Error($"ChatVM.ExecuteSend: task faulted/canceled: {error}");
                     _mainThreadQueue.Enqueue(() =>
                     {
-                        CompanionText = $"(Cláudio não respondeu: {error})";
+                        CompanionText = $"(sem resposta: {error})";
                         IsWaitingForReply = false;
                     });
                 }

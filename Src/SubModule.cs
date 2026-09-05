@@ -38,7 +38,7 @@ namespace AICompanion
 
             if (game.GameType is Campaign && gameStarterObject is CampaignGameStarter starter)
             {
-                starter.AddBehavior(new CompanionBehavior());
+                starter.AddBehavior(new AICompanionRoleBehavior());
                 starter.AddBehavior(new ChatHistoryBehavior());
                 starter.AddBehavior(new HandOfTheKingBehavior());
                 starter.AddBehavior(new CommandDelegationState());

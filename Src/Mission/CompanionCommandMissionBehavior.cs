@@ -7,10 +7,10 @@ using TaleWorlds.MountAndBlade;
 namespace AICompanion.Mission
 {
     /// <summary>
-    /// When the player has asked Cláudio to lead the troops (via the "Lidere as tropas!"
-    /// dialog option, tracked by <see cref="CommandDelegationState"/>), makes him the AI
-    /// captain of the player's largest infantry-ish formation for that battle — the closest
-    /// equivalent Bannerlord's Formation system has to "hand a companion the command".
+    /// When the player has asked the current "Minha Mão" holder to lead the troops (via the
+    /// "Lidere as tropas!" dialog option, tracked by <see cref="CommandDelegationState"/>),
+    /// makes them the AI captain of the player's largest formation for that battle — the
+    /// closest equivalent Bannerlord's Formation system has to "hand a companion the command".
     /// </summary>
     public sealed class CompanionCommandMissionBehavior : MissionBehavior
     {
@@ -27,9 +27,10 @@ namespace AICompanion.Mission
                 return;
             }
 
-            var isCompanion = agent.Character is TaleWorlds.CampaignSystem.CharacterObject character &&
-                               character.HeroObject?.StringId == CompanionDefinition.HeroStringId;
-            if (!isCompanion)
+            var isHolder = agent.Character is TaleWorlds.CampaignSystem.CharacterObject character &&
+                            AICompanionRoleBehavior.Instance != null &&
+                            AICompanionRoleBehavior.Instance.IsHolder(character.HeroObject);
+            if (!isHolder)
             {
                 return;
             }
@@ -55,8 +56,9 @@ namespace AICompanion.Mission
             targetFormation.Captain = companionAgent;
             _hasAssignedCommand = true;
 
+            var heroName = AICompanionRoleBehavior.Instance?.CurrentHolder?.Name?.ToString() ?? "Ele";
             InformationManager.DisplayMessage(new InformationMessage(
-                $"{CompanionDefinition.Name} assume o comando de {targetFormation.CountOfUnits} " +
+                $"{heroName} assume o comando de {targetFormation.CountOfUnits} " +
                 "homens nesta batalha.", Colors.Yellow));
         }
     }

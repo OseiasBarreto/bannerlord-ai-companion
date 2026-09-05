@@ -1,33 +1,48 @@
-using System.Linq;
+using System.Collections.Generic;
 using AICompanion.Config;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.Library;
-using TaleWorlds.Localization;
+using TaleWorlds.SaveSystem;
 
 namespace AICompanion.Companion
 {
     /// <summary>
-    /// Tracks how Cláudio feels about the player over time, so he isn't unconditionally loyal —
-    /// he forms his own read on who you're becoming and can eventually walk away over it. Rather
-    /// than hooking every possible "moral" decision by hand, this rides on the player's own
-    /// personality traits (Honor, Mercy, Generosity, Calculating), which the base game already
-    /// updates from choices made across the campaign — that's the actual memory of what you did.
+    /// Tracks how the current "Minha Mão" holder feels about the player over time, per hero
+    /// (StringId) — so loyalty belongs to the person, not the office: promoting someone new
+    /// starts fresh at neutral trust, and an old holder's opinion just sits unused once they're
+    /// no longer the holder. Rides on the player's own personality traits (Honor, Mercy,
+    /// Generosity, Calculating), which the base game already updates from real choices — that's
+    /// the actual "memory" of what the player did, not something this mod tracks by hand.
     /// </summary>
     public sealed class CompanionOpinionBehavior : CampaignBehaviorBase
     {
         private const int BetrayalThreshold = -60;
         private const int MaxOpinion = 100;
         private const int MinOpinion = -100;
+        private const int StartingOpinion = 20; // modestly trusting — hasn't seen much of you yet.
 
-        private int _opinion = 20; // starts modestly trusting — he hasn't seen much of you yet.
-        private bool _hasLeft;
+        [SaveableField(1)]
+        private Dictionary<string, int> _opinionByHero = new Dictionary<string, int>();
 
         private static CompanionOpinionBehavior _instance;
 
-        public static int Opinion => _instance?._opinion ?? 0;
-        public static bool HasLeft => _instance?._hasLeft ?? false;
+        private static string CurrentHeroId => AICompanionRoleBehavior.Instance?.CurrentHolder?.StringId;
+
+        public static int Opinion
+        {
+            get
+            {
+                var heroId = CurrentHeroId;
+                if (heroId == null || _instance == null)
+                {
+                    return 0;
+                }
+
+                return _instance._opinionByHero.TryGetValue(heroId, out var value) ? value : StartingOpinion;
+            }
+        }
 
         public override void RegisterEvents()
         {
@@ -37,40 +52,43 @@ namespace AICompanion.Companion
 
         public override void SyncData(IDataStore dataStore)
         {
-            dataStore.SyncData("AICompanion_Opinion", ref _opinion);
-            dataStore.SyncData("AICompanion_OpinionHasLeft", ref _hasLeft);
+            dataStore.SyncData("AICompanion_OpinionByHero", ref _opinionByHero);
+            _opinionByHero ??= new Dictionary<string, int>();
         }
 
         private void DailyTick()
         {
-            if (_hasLeft)
+            var heroId = CurrentHeroId;
+            var playerHero = Hero.MainHero;
+            if (heroId == null || playerHero == null)
             {
                 return;
             }
 
-            var hero = Hero.MainHero;
-            if (hero == null)
+            if (!_opinionByHero.TryGetValue(heroId, out var opinion))
             {
-                return;
+                opinion = StartingOpinion;
             }
 
-            var previous = _opinion;
-            var target = ComputeTargetOpinion(hero);
-            if (_opinion < target)
+            var previous = opinion;
+            var target = ComputeTargetOpinion(playerHero);
+            if (opinion < target)
             {
-                _opinion = System.Math.Min(_opinion + 1, MaxOpinion);
+                opinion = System.Math.Min(opinion + 1, MaxOpinion);
             }
-            else if (_opinion > target)
+            else if (opinion > target)
             {
-                _opinion = System.Math.Max(_opinion - 1, MinOpinion);
-            }
-
-            if (_opinion != previous)
-            {
-                ModLog.Info($"Opinion drifted {previous} -> {_opinion} (target {target}).");
+                opinion = System.Math.Max(opinion - 1, MinOpinion);
             }
 
-            if (_opinion <= BetrayalThreshold)
+            _opinionByHero[heroId] = opinion;
+
+            if (opinion != previous)
+            {
+                ModLog.Info($"Opinion (hero {heroId}) drifted {previous} -> {opinion} (target {target}).");
+            }
+
+            if (opinion <= BetrayalThreshold)
             {
                 LeaveOverDisapproval();
             }
@@ -88,28 +106,27 @@ namespace AICompanion.Companion
 
         private void LeaveOverDisapproval()
         {
-            var hero = Hero.AllAliveHeroes
-                .FirstOrDefault(h => h.StringId == CompanionDefinition.HeroStringId);
+            var hero = AICompanionRoleBehavior.Instance?.CurrentHolder;
             if (hero == null || Clan.PlayerClan == null)
             {
-                ModLog.Error("Opinion hit betrayal threshold but companion hero or player clan " +
-                             "was null — cannot process departure.");
+                ModLog.Error("Opinion hit betrayal threshold but no current holder or player " +
+                             "clan was null — cannot process departure.");
                 return;
             }
 
-            ModLog.Info($"Opinion ({_opinion}) crossed betrayal threshold — companion is leaving.");
-            _hasLeft = true;
+            ModLog.Info($"Opinion for {hero.Name} crossed betrayal threshold — leaving.");
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"{CompanionDefinition.Name} não reconhece mais quem você se tornou. Ele reúne " +
-                "suas coisas e parte, sem olhar para trás.", Colors.Red));
+                $"{hero.Name} não reconhece mais quem você se tornou. Ele reúne suas coisas e " +
+                "parte, sem olhar para trás.", Colors.Red));
 
+            AICompanionRoleBehavior.Instance.Clear();
             RemoveCompanionAction.ApplyByFire(Clan.PlayerClan, hero);
         }
 
         /// <summary>
         /// Short line describing where the relationship stands, meant to be folded into the
-        /// chat system prompt so Cláudio's tone actually reflects it instead of staying static.
+        /// chat system prompt so the AI's tone actually reflects it instead of staying static.
         /// </summary>
         public static string DescribeForPrompt()
         {

@@ -95,8 +95,15 @@ namespace AICompanion.Chat
 
             // Fixed guardrails, appended regardless of the player's custom prompt in
             // ai-companion.config.json, so they can't be lost/forgotten by editing that file.
-            sb.Append(" Sua história pessoal, que é sua e real para você, não um enredo " +
-                      "genérico: ").Append(CompanionDefinition.BackgroundText);
+            // Personality now comes straight from the current "Minha Mão" holder's own real
+            // traits/culture (HeroPersonalityBuilder) instead of an authored backstory — this
+            // is what makes whichever hero the player promotes feel like themselves.
+            var holder = AICompanionRoleBehavior.Instance?.CurrentHolder;
+            var personality = HeroPersonalityBuilder.Describe(holder);
+            if (!string.IsNullOrEmpty(personality))
+            {
+                sb.Append(" ").Append(personality);
+            }
 
             sb.Append(" Você conhece bem o mundo deste jogo — reinos, senhores importantes, " +
                       "facções rivais, geografia, cultura, e principalmente assuntos militares: " +

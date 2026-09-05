@@ -1,14 +1,16 @@
 using AICompanion.Companion;
 using AICompanion.Config;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.Core;
+using TaleWorlds.Library;
 
 namespace AICompanion.Dialog
 {
     /// <summary>
-    /// Adds a "Conversar" dialog option whenever the player talks to the companion hero,
-    /// opening the dedicated AI chat screen. Registered directly from SubModule.OnGameStart
-    /// (not a CampaignBehaviorBase) since dialog trees are wired once, at CampaignGameStarter
-    /// setup time, rather than through the per-tick behavior event system.
+    /// Adds dialog options for the "Minha Mão" system: promoting/dismissing whoever holds the
+    /// role, and — for the current holder specifically — the AI chat and battle-command
+    /// options. Whether these show up is now driven entirely by
+    /// <see cref="AICompanionRoleBehavior"/> instead of one fixed hero's StringId.
     /// </summary>
     public static class ChatDialogBehavior
     {
@@ -21,7 +23,7 @@ namespace AICompanion.Dialog
                 "hero_main_options",
                 "aicompanion_chat_opened",
                 "{=aicompanion_chat_line}Podemos conversar um instante?",
-                IsTalkingToCompanion,
+                IsTalkingToHolder,
                 OpenChatScreen);
 
             starter.AddDialogLine(
@@ -37,7 +39,7 @@ namespace AICompanion.Dialog
                 "hero_main_options",
                 "aicompanion_delegate_command_response",
                 "{=aicompanion_delegate_command_line}Lidere as tropas na próxima batalha!",
-                IsTalkingToCompanion,
+                IsTalkingToHolder,
                 DelegateCommand);
 
             starter.AddDialogLine(
@@ -48,21 +50,86 @@ namespace AICompanion.Dialog
                 "comigo — cuidarei bem dos seus homens.",
                 null,
                 null);
+
+            starter.AddPlayerLine(
+                "aicompanion_promote",
+                "hero_main_options",
+                "aicompanion_promote_response",
+                "{=aicompanion_promote_line}Quero que você seja minha mão.",
+                IsPromotableCompanion,
+                Promote);
+
+            starter.AddDialogLine(
+                "aicompanion_promote_ack",
+                "aicompanion_promote_response",
+                "close_window",
+                "{=aicompanion_promote_ack}Será uma honra. Pode contar comigo pra tudo daqui em diante.",
+                null,
+                null);
+
+            starter.AddPlayerLine(
+                "aicompanion_dismiss",
+                "hero_main_options",
+                "aicompanion_dismiss_response",
+                "{=aicompanion_dismiss_line}Não preciso mais que você seja minha mão.",
+                IsTalkingToHolder,
+                Dismiss);
+
+            starter.AddDialogLine(
+                "aicompanion_dismiss_ack",
+                "aicompanion_dismiss_response",
+                "close_window",
+                "{=aicompanion_dismiss_ack}Entendido. Sempre por perto, se precisar de novo.",
+                null,
+                null);
         }
 
         private static void DelegateCommand()
         {
-            AICompanion.Companion.CommandDelegationState.CommandDelegated = true;
+            CommandDelegationState.CommandDelegated = true;
         }
 
-        private static bool IsTalkingToCompanion()
+        private static bool IsTalkingToHolder()
         {
             var conversationHero = Hero.OneToOneConversationHero;
-            var result = conversationHero != null &&
-                         conversationHero.StringId == CompanionDefinition.HeroStringId;
-            ModLog.Info($"IsTalkingToCompanion check: conversationHero=" +
+            var result = AICompanionRoleBehavior.Instance != null &&
+                         AICompanionRoleBehavior.Instance.IsHolder(conversationHero);
+            ModLog.Info($"IsTalkingToHolder check: conversationHero=" +
                         $"{conversationHero?.StringId ?? "null"} ({conversationHero?.Name}), result={result}.");
             return result;
+        }
+
+        /// <summary>
+        /// Any living hero in the player's own clan, other than the player, who doesn't already
+        /// hold the role — this covers both family members and recruited companions, matching
+        /// "qualquer herói do grupo pode virar minha mão."
+        /// </summary>
+        private static bool IsPromotableCompanion()
+        {
+            var hero = Hero.OneToOneConversationHero;
+            if (hero == null || hero == Hero.MainHero || hero.Clan != Clan.PlayerClan)
+            {
+                return false;
+            }
+
+            return AICompanionRoleBehavior.Instance == null ||
+                   !AICompanionRoleBehavior.Instance.IsHolder(hero);
+        }
+
+        private static void Promote()
+        {
+            var hero = Hero.OneToOneConversationHero;
+            AICompanionRoleBehavior.Instance?.Promote(hero);
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"{hero?.Name} agora é sua Mão.", Colors.Yellow));
+        }
+
+        private static void Dismiss()
+        {
+            var hero = Hero.OneToOneConversationHero;
+            AICompanionRoleBehavior.Instance?.Clear();
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"{hero?.Name} não é mais sua Mão.", Colors.Yellow));
         }
 
         private static void OpenChatScreen()
