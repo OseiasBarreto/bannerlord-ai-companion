@@ -14,11 +14,15 @@ namespace AICompanion.Config
         [JsonProperty("apiKey")]
         public string ApiKey { get; set; } = string.Empty;
 
-        // "openrouter/free" auto-picks among whatever free models are actually up right now,
-        // instead of pinning one — a specific free model (minimax/minimax-m3:free) got pulled
-        // from OpenRouter's free tier entirely mid-session, breaking every chat call outright.
+        // Pinned to a specific, well-known instruction-following model rather than the
+        // "openrouter/free" auto-router — the router's random pick was flaky live (one call
+        // dumped a raw English chain-of-thought into the reply, another came back genuinely
+        // empty). Llama 3.3 70B isn't a reasoning model and has a solid multilingual/instruct
+        // track record. Downside: a pinned free model can still get pulled from the free tier
+        // later (this exact thing happened to the previous pin, minimax/minimax-m3:free) — if
+        // that happens again, check OpenRouter's free-models list for a current replacement.
         [JsonProperty("model")]
-        public string Model { get; set; } = "openrouter/free";
+        public string Model { get; set; } = "meta-llama/llama-3.3-70b-instruct:free";
 
         // Generic on purpose: identity/backstory comes from HeroPersonalityBuilder (the real
         // hero's own traits and culture) at prompt-build time, not from a fixed character

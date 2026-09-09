@@ -18,10 +18,6 @@
                 <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
                             HorizontalAlignment="Left" VerticalAlignment="Center"
                             Text="Você diz:" Brush="Conversation.HeaderText" />
-                <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
-                            HorizontalAlignment="Left" VerticalAlignment="Center" MarginLeft="12"
-                            Text="Cláudio está pensando..." IsVisible="@IsWaitingForReply"
-                            Brush="GameTip.Text" />
                 <ButtonWidget WidthSizePolicy="Fixed" SuggestedWidth="70"
                               HeightSizePolicy="StretchToParent"
                               HorizontalAlignment="Right"
