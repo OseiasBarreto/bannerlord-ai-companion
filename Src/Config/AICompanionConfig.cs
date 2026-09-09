@@ -14,8 +14,11 @@ namespace AICompanion.Config
         [JsonProperty("apiKey")]
         public string ApiKey { get; set; } = string.Empty;
 
+        // "openrouter/free" auto-picks among whatever free models are actually up right now,
+        // instead of pinning one — a specific free model (minimax/minimax-m3:free) got pulled
+        // from OpenRouter's free tier entirely mid-session, breaking every chat call outright.
         [JsonProperty("model")]
-        public string Model { get; set; } = "minimax/minimax-m3:free";
+        public string Model { get; set; } = "openrouter/free";
 
         // Generic on purpose: identity/backstory comes from HeroPersonalityBuilder (the real
         // hero's own traits and culture) at prompt-build time, not from a fixed character
