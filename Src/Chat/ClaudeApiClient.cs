@@ -65,18 +65,19 @@ namespace AICompanion.Chat
                 });
             }
 
+            // NOT setting "reasoning": {"exclude": true} here on purpose — tested directly
+            // against the live API outside the game: with that field set, some reasoning
+            // models (confirmed with inclusionai/ling-3.0-flash-sante:free) burn the entire
+            // max_tokens budget on hidden reasoning and return content: null, every time,
+            // regardless of how large max_tokens is. Without the field, the same models
+            // correctly put their chain-of-thought in a separate "reasoning" response field
+            // (which we simply never read) and a real answer in "content". The fix was
+            // removing this parameter, not adding it.
             var payload = new JObject
             {
                 ["model"] = config.Model,
                 ["max_tokens"] = config.MaxTokens,
-                ["messages"] = messages,
-                // "openrouter/free" can route to a reasoning model (Qwen/DeepSeek-style),
-                // which otherwise burns the whole max_tokens budget on an English chain-of-
-                // thought dump in the "content" field itself and never reaches a real answer
-                // — confirmed live. This OpenRouter-specific field tells reasoning-capable
-                // models to skip emitting that trace; models that don't support it just ignore
-                // the field.
-                ["reasoning"] = new JObject { ["exclude"] = true }
+                ["messages"] = messages
             };
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint))
