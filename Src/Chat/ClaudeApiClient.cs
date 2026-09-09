@@ -69,7 +69,14 @@ namespace AICompanion.Chat
             {
                 ["model"] = config.Model,
                 ["max_tokens"] = config.MaxTokens,
-                ["messages"] = messages
+                ["messages"] = messages,
+                // "openrouter/free" can route to a reasoning model (Qwen/DeepSeek-style),
+                // which otherwise burns the whole max_tokens budget on an English chain-of-
+                // thought dump in the "content" field itself and never reaches a real answer
+                // — confirmed live. This OpenRouter-specific field tells reasoning-capable
+                // models to skip emitting that trace; models that don't support it just ignore
+                // the field.
+                ["reasoning"] = new JObject { ["exclude"] = true }
             };
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, Endpoint))
