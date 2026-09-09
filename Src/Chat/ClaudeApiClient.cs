@@ -13,6 +13,20 @@ using Newtonsoft.Json.Linq;
 namespace AICompanion.Chat
 {
     /// <summary>
+    /// A parsed reply from the API: the visible text, plus any order tags the model emitted
+    /// (patrol/caravan/return) — extracted here since ExtractReplyText already parses tags out
+    /// of the raw text, but never executed here: order execution touches Campaign/Hero objects,
+    /// which isn't safe off the main thread this whole call runs on. The caller (ChatVM) queues
+    /// the actual execution onto its main-thread queue, same as the UI text update.
+    /// </summary>
+    public sealed class ChatReply
+    {
+        public string Text;
+        public string PatrolLocationTag;
+        public bool ReturnRequested;
+    }
+
+    /// <summary>
     /// Minimal async client for the OpenRouter chat-completions API (OpenAI-compatible shape).
     /// Kept dependency-free (just HttpClient + Newtonsoft.Json) so it doesn't need anything
     /// beyond what ships with the game's .NET runtime.
@@ -30,7 +44,7 @@ namespace AICompanion.Chat
         /// Sends the running conversation to the configured model and returns the companion's
         /// reply. Throws on network/API errors — callers should catch and show a fallback line.
         /// </summary>
-        public async Task<string> SendAsync(IReadOnlyList<ChatMessage> history)
+        public async Task<ChatReply> SendAsync(IReadOnlyList<ChatMessage> history)
         {
             var config = AICompanionConfig.Instance;
             if (!config.IsConfigured)
@@ -163,6 +177,17 @@ namespace AICompanion.Chat
                 sb.Append(" ").Append(memory);
             }
 
+            sb.Append(" Se o jogador te der uma ordem clara de ir patrulhar/guardar um local " +
+                      "(ex: 'vá patrulhar X', 'fique de guarda em Y', 'vá para Z'), confirme " +
+                      "isso na resposta E termine com uma linha extra, sozinha, no formato " +
+                      "exato \"[PATRULHAR: local]\", onde local é o nome exato de um " +
+                      "assentamento, ou \"AQUI\" se o jogador disser pra ficar onde você está " +
+                      "agora, ou \"NomeX;NomeZ\" se ele pedir pra patrulhar entre dois lugares. " +
+                      "Se o jogador pedir claramente pra você voltar pro grupo dele (ex: " +
+                      "'volte pra mim', 'venha se juntar a nós de novo'), confirme e termine " +
+                      "com a linha \"[RETORNAR]\" sozinha. Essas linhas nunca aparecem pro " +
+                      "jogador — só use quando for uma ordem de verdade, não em toda resposta.");
+
             sb.Append(" Quando algo desta conversa valer a pena lembrar depois (uma escolha " +
                       "importante do jogador, uma promessa, uma mudança forte de opinião sua, " +
                       "ou principalmente um OBJETIVO/plano que o jogador contar pra você — o " +
@@ -179,6 +204,12 @@ namespace AICompanion.Chat
         private static readonly Regex MemoryTag =
             new Regex(@"\[MEMORIA:\s*(?<note>[^\]]+)\]", RegexOptions.IgnoreCase);
 
+        private static readonly Regex PatrolTag =
+            new Regex(@"\[PATRULHAR:\s*(?<local>[^\]]+)\]", RegexOptions.IgnoreCase);
+
+        private static readonly Regex ReturnTag =
+            new Regex(@"\[RETORNAR\]", RegexOptions.IgnoreCase);
+
         // Safety net for the free model occasionally leaking CJK tokens mid-sentence (observed
         // live: "vira的尸体 no campo" instead of "vira cadáver no campo") — the system prompt
         // asks it not to, but that's not guaranteed on a free/quantized model, so strip anything
@@ -186,7 +217,7 @@ namespace AICompanion.Chat
         private static readonly Regex CjkChars = new Regex(
             "[㐀-䶿一-鿿぀-ヿ가-힣]+");
 
-        private static string ExtractReplyText(string responseBody)
+        private static ChatReply ExtractReplyText(string responseBody)
         {
             var parsed = JObject.Parse(responseBody);
             var choices = parsed["choices"] as JArray;
@@ -194,7 +225,7 @@ namespace AICompanion.Chat
 
             if (string.IsNullOrWhiteSpace(text))
             {
-                return "(sem resposta)";
+                return new ChatReply { Text = "(sem resposta)" };
             }
 
             foreach (Match match in MemoryTag.Matches(text))
@@ -202,9 +233,22 @@ namespace AICompanion.Chat
                 CompanionMemoryBehavior.Instance?.AddMemory(match.Groups["note"].Value);
             }
 
+            var reply = new ChatReply();
+
+            var patrolMatch = PatrolTag.Match(text);
+            if (patrolMatch.Success)
+            {
+                reply.PatrolLocationTag = patrolMatch.Groups["local"].Value.Trim();
+            }
+
+            reply.ReturnRequested = ReturnTag.IsMatch(text);
+
             var visibleText = MemoryTag.Replace(text, string.Empty);
+            visibleText = PatrolTag.Replace(visibleText, string.Empty);
+            visibleText = ReturnTag.Replace(visibleText, string.Empty);
             visibleText = CjkChars.Replace(visibleText, string.Empty).Trim();
-            return string.IsNullOrWhiteSpace(visibleText) ? "(sem resposta)" : visibleText;
+            reply.Text = string.IsNullOrWhiteSpace(visibleText) ? "(sem resposta)" : visibleText;
+            return reply;
         }
 
         private static string TryExtractError(string responseBody)

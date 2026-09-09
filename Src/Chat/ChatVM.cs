@@ -211,12 +211,27 @@ namespace AICompanion.Chat
                 else
                 {
                     var reply = task.Result;
-                    ModLog.Info($"ChatVM.ExecuteSend: reply received, length={reply?.Length}. Queuing UI update.");
+                    ModLog.Info($"ChatVM.ExecuteSend: reply received, length={reply?.Text?.Length}. Queuing UI update.");
                     _mainThreadQueue.Enqueue(() =>
                     {
-                        AddMessage(ChatRole.Companion, reply);
-                        CompanionText = reply;
+                        AddMessage(ChatRole.Companion, reply.Text);
+                        CompanionText = reply.Text;
                         IsWaitingForReply = false;
+
+                        // Order tags touch Campaign/Hero objects (spawning/destroying parties),
+                        // so they only ever run here, on the main thread — never from the
+                        // background task these tags were parsed out of.
+                        if (reply.PatrolLocationTag != null)
+                        {
+                            var error = CompanionOrders.TryStartPatrol(reply.PatrolLocationTag);
+                            if (error != null) ModLog.Error($"ChatVM: patrol order failed: {error}");
+                        }
+                        else if (reply.ReturnRequested)
+                        {
+                            var error = CompanionOrders.TryReturnToParty();
+                            if (error != null) ModLog.Error($"ChatVM: return order failed: {error}");
+                        }
+
                         ModLog.Info($"ChatVM.ExecuteSend: reply applied on main thread. " +
                                     $"IsWaitingForReply={IsWaitingForReply}.");
                     });
